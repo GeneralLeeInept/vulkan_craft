@@ -20,14 +20,20 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    _swapchain.initialise(_device);
+
     return true;
 }
 
 void Renderer::shutdown()
 {
+    _swapchain.destroy();
     _device.destroy();
 
-    vkDestroySurfaceKHR(_vulkan_instance, _surface, nullptr);
+    if (_surface)
+    {
+        vkDestroySurfaceKHR(_vulkan_instance, _surface, nullptr);
+    }
 
     if (_debug_report)
     {
@@ -42,9 +48,15 @@ void Renderer::shutdown()
     }
 }
 
+bool Renderer::set_window_size(uint32_t width, uint32_t height)
+{
+    vkDeviceWaitIdle((VkDevice)_device);
+    return _swapchain.create(&width, &height, true);
+}
+
 bool Renderer::draw_frame()
 {
-    return false;
+    return true;
 }
 
 #if !defined(NDEBUG)
@@ -117,9 +129,9 @@ bool Renderer::create_instance()
     return true;
 }
 
-static bool check_device(VulkanPhysicalDevice& device, VkSurfaceKHR surface)
+static bool check_device(VulkanDevice& device)
 {
-    if (device.get_queue_family_index(VK_QUEUE_GRAPHICS_BIT, surface) == UINT32_MAX)
+    if (device.find_queue_family_index(VK_QUEUE_GRAPHICS_BIT) == UINT32_MAX)
     {
         return false;
     }
@@ -127,31 +139,32 @@ static bool check_device(VulkanPhysicalDevice& device, VkSurfaceKHR surface)
     return true;
 }
 
-static VulkanPhysicalDevice& compare_devices(VulkanPhysicalDevice& a, VulkanPhysicalDevice& b)
+static VulkanDevice& compare_devices(VulkanDevice& a, VulkanDevice& b)
 {
     return b;
 }
 
-static VulkanPhysicalDevice pick_device(const std::vector<VkPhysicalDevice>& devices, VkSurfaceKHR surface)
+static VulkanDevice pick_device(const std::vector<VkPhysicalDevice>& devices, VkSurfaceKHR surface)
 {
-    VulkanPhysicalDevice best;
+    VulkanDevice best;
 
     for (VkPhysicalDevice d : devices)
     {
-        VulkanPhysicalDevice device;
-        
-        device.initialise(d);
+        VulkanDevice device;
 
-        if (check_device(device, surface))
+        if (device.initialise(d, surface))
         {
-            best = std::move(compare_devices(best, device));
+            if (check_device(device))
+            {
+                best = std::move(compare_devices(best, device));
+            }
         }
     }
 
     return best;
 }
 
-bool Renderer::create_device() 
+bool Renderer::create_device()
 {
     uint32_t count;
     VULKAN_CHECK_RESULT(vkEnumeratePhysicalDevices(_vulkan_instance, &count, nullptr));
@@ -164,12 +177,12 @@ bool Renderer::create_device()
     std::vector<VkPhysicalDevice> devices(count);
     VULKAN_CHECK_RESULT(vkEnumeratePhysicalDevices(_vulkan_instance, &count, devices.data()));
 
-    _physical_device = pick_device(devices, _surface);
+    _device = pick_device(devices, _surface);
 
-    if (!_physical_device)
+    if (!(VkPhysicalDevice)_device)
     {
         return false;
     }
 
-    return _device.create(_physical_device, _surface);
+    return _device.create();
 }

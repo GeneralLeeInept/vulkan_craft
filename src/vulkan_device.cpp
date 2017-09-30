@@ -1,39 +1,97 @@
 #include "vulkan.h"
 
-VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanPhysicalDevice&& rhs)
+VulkanDevice::VulkanDevice(VulkanDevice&& rhs)
 {
     *this = std::move(rhs);
 }
 
-VulkanPhysicalDevice& VulkanPhysicalDevice::operator=(VulkanPhysicalDevice&& rhs)
+VulkanDevice& VulkanDevice::operator=(VulkanDevice&& rhs)
 {
-    _device = rhs._device;
+    _queue_family_properties = std::move(rhs._queue_family_properties);
+    _surface_formats = std::move(rhs._surface_formats);
+    _present_modes = std::move(rhs._present_modes);
+
     _properties = rhs._properties;
     _features = rhs._features;
-    _queue_family_properties = std::move(rhs._queue_family_properties);
+    _surface_capabilities = rhs._surface_capabilities;
 
-    rhs._device = VK_NULL_HANDLE;
+    _physical_device = rhs._physical_device;
+    _surface = rhs._surface;
+    _device = rhs._device;
+    _graphics_queue = rhs._graphics_queue;
+    _graphics_queue_index = rhs._graphics_queue_index;
+
     rhs._properties = {};
     rhs._features = {};
+    rhs._surface_capabilities = {};
+
+    rhs._physical_device = VK_NULL_HANDLE;
+    rhs._surface = VK_NULL_HANDLE;
+    rhs._device = VK_NULL_HANDLE;
+    rhs._graphics_queue = VK_NULL_HANDLE;
+    rhs._graphics_queue_index = VK_NULL_HANDLE;
 
     return *this;
 }
 
-void VulkanPhysicalDevice::initialise(VkPhysicalDevice device)
+bool VulkanDevice::initialise(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
-    _device = device;
-
-    vkGetPhysicalDeviceProperties(_device, &_properties);
-
-    vkGetPhysicalDeviceFeatures(_device, &_features);
+    vkGetPhysicalDeviceProperties(device, &_properties);
+    vkGetPhysicalDeviceFeatures(device, &_features);
 
     uint32_t count;
-    vkGetPhysicalDeviceQueueFamilyProperties(_device, &count, nullptr);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
     _queue_family_properties.resize(count);
-    vkGetPhysicalDeviceQueueFamilyProperties(_device, &count, _queue_family_properties.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &count, _queue_family_properties.data());
+    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &_surface_capabilities));
+    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, nullptr));
+    _surface_formats.resize(count);
+    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, _surface_formats.data()));
+    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &count, nullptr));
+    _present_modes.resize(count);
+    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &count, _present_modes.data()));
+
+    _physical_device = device;
+    _surface = surface;
 }
 
-uint32_t VulkanPhysicalDevice::get_queue_family_index(VkQueueFlags flags, VkSurfaceKHR surface) const
+bool VulkanDevice::create()
+{
+    _graphics_queue_index = find_queue_family_index(VK_QUEUE_GRAPHICS_BIT);
+
+    VkDeviceQueueCreateInfo queue_create_info = {};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = _graphics_queue_index;
+    queue_create_info.queueCount = 1;
+    float queue_priorities = 0.0f;
+    queue_create_info.pQueuePriorities = &queue_priorities;
+
+    std::vector<const char*> device_extensions;
+    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+    VkDeviceCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    create_info.queueCreateInfoCount = 1;
+    create_info.pQueueCreateInfos = &queue_create_info;
+    create_info.enabledExtensionCount = (uint32_t)device_extensions.size();
+    create_info.ppEnabledExtensionNames = device_extensions.data();
+    VULKAN_CHECK_RESULT(vkCreateDevice(_physical_device, &create_info, nullptr, &_device));
+
+    vkGetDeviceQueue(_device, queue_create_info.queueFamilyIndex, 0, &_graphics_queue);
+
+    return true;
+}
+
+void VulkanDevice::destroy()
+{
+    if (_device)
+    {
+        vkDestroyDevice(_device, nullptr);
+        _device = VK_NULL_HANDLE;
+    }
+}
+
+uint32_t VulkanDevice::find_queue_family_index(VkQueueFlags flags) const
 {
     uint32_t valid = UINT32_MAX;
 
@@ -48,9 +106,9 @@ uint32_t VulkanPhysicalDevice::get_queue_family_index(VkQueueFlags flags, VkSurf
         {
             VkBool32 surface_support = true;
 
-            if (surface)
+            if ((flags & VK_QUEUE_GRAPHICS_BIT) && _surface)
             {
-                vkGetPhysicalDeviceSurfaceSupportKHR(_device, i, surface, &surface_support);
+                vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, _surface, &surface_support);
             }
 
             if (surface_support)
@@ -63,9 +121,9 @@ uint32_t VulkanPhysicalDevice::get_queue_family_index(VkQueueFlags flags, VkSurf
         {
             VkBool32 surface_support = true;
 
-            if (surface)
+            if ((flags & VK_QUEUE_GRAPHICS_BIT) && _surface)
             {
-                vkGetPhysicalDeviceSurfaceSupportKHR(_device, i, surface, &surface_support);
+                vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, _surface, &surface_support);
             }
 
             if (surface_support)
@@ -77,33 +135,3 @@ uint32_t VulkanPhysicalDevice::get_queue_family_index(VkQueueFlags flags, VkSurf
 
     return valid;
 }
-
-bool VulkanDevice::create(VulkanPhysicalDevice& physical_device, VkSurfaceKHR surface)
-{
-    VkDeviceQueueCreateInfo queue_create_info = {};
-    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queue_create_info.queueFamilyIndex = physical_device.get_queue_family_index(VK_QUEUE_GRAPHICS_BIT, surface);
-    queue_create_info.queueCount = 1;
-    float queue_priorities = 0.0f;
-    queue_create_info.pQueuePriorities = &queue_priorities;
-
-    VkDeviceCreateInfo create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    create_info.queueCreateInfoCount = 1;
-    create_info.pQueueCreateInfos = &queue_create_info;
-    VULKAN_CHECK_RESULT(vkCreateDevice(physical_device, &create_info, nullptr, &_device));
-
-    _physical_device = &physical_device;
-    _surface = surface;
-
-    return true;
-}
-
-void VulkanDevice::destroy()
-{
-    if (_device)
-    {
-        vkDestroyDevice(_device, nullptr);
-    }
-}
-

@@ -18,6 +18,9 @@
     <ClCompile Include="..\src\vulkan_device.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\vulkan_swapchain.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\renderer.h">
@@ -27,6 +30,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\vulkan.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulkan_swapchain.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
