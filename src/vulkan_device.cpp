@@ -53,6 +53,8 @@ bool VulkanDevice::initialise(VkPhysicalDevice device, VkSurfaceKHR surface)
 
     _physical_device = device;
     _surface = surface;
+
+    return true;
 }
 
 bool VulkanDevice::create()
@@ -134,4 +136,28 @@ uint32_t VulkanDevice::find_queue_family_index(VkQueueFlags flags) const
     }
 
     return valid;
+}
+
+VkResult VulkanDevice::create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool)
+{
+    VkCommandPoolCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    create_info.flags = flags;
+    create_info.queueFamilyIndex = _graphics_queue_index;
+    return vkCreateCommandPool(_device, &create_info, nullptr, command_pool);
+}
+
+void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask, uint32_t signal_semaphore_count,
+                          VkSemaphore* signal_semaphores)
+{
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.waitSemaphoreCount = wait_semaphore_count;
+    submit_info.pWaitSemaphores = wait_semaphores;
+    submit_info.pWaitDstStageMask = wait_stage_mask;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &buffer;
+    submit_info.signalSemaphoreCount = signal_semaphore_count;
+    submit_info.pSignalSemaphores = signal_semaphores;
+    vkQueueSubmit(_graphics_queue, 1, &submit_info, nullptr);
 }

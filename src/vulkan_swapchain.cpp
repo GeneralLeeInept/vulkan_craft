@@ -1,8 +1,12 @@
 #include "vulkan.h"
 
-void VulkanSwapchain::initialise(VulkanDevice& device)
+bool VulkanSwapchain::initialise(VulkanDevice& device)
 {
     _device = &device;
+    VkSemaphoreCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    VULKAN_CHECK_RESULT(vkCreateSemaphore((VkDevice)device, &create_info, nullptr, &_image_acquired_semaphore));
+    return true;
 }
 
 void choose_surface_format(const std::vector<VkSurfaceFormatKHR>& surface_formats, VkFormat& format, VkColorSpaceKHR& colour_space)
@@ -39,16 +43,15 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
     VkSwapchainKHR old_swapchain = _swapchain;
 
     VkSurfaceCapabilitiesKHR surface_capabilities = _device->get_surface_capabilities();
-    VkExtent2D swapchain_extent = {};
 
     if (surface_capabilities.currentExtent.width == UINT32_MAX)
     {
-        swapchain_extent.width = *width;
-        swapchain_extent.height = *height;
+        _extent.width = *width;
+        _extent.height = *height;
     }
     else
     {
-        swapchain_extent = surface_capabilities.currentExtent;
+        _extent = surface_capabilities.currentExtent;
         *width = surface_capabilities.currentExtent.width;
         *height = surface_capabilities.currentExtent.height;
     }
@@ -76,9 +79,8 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
         swapchain_image_count = surface_capabilities.maxImageCount;
     }
 
-    VkFormat image_format;
     VkColorSpaceKHR colour_space;
-    choose_surface_format(_device->get_surface_formats(), image_format, colour_space);
+    choose_surface_format(_device->get_surface_formats(), _image_format, colour_space);
 
     VkSurfaceTransformFlagBitsKHR pretransform;
     if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
@@ -113,9 +115,9 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     create_info.surface = _device->get_surface();
     create_info.minImageCount = swapchain_image_count;
-    create_info.imageFormat = image_format;
+    create_info.imageFormat = _image_format;
     create_info.imageColorSpace = colour_space;
-    create_info.imageExtent = swapchain_extent;
+    create_info.imageExtent = _extent;
     create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     create_info.preTransform = pretransform;
     create_info.imageArrayLayers = 1;
@@ -125,15 +127,6 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
     create_info.clipped = VK_TRUE;
     create_info.compositeAlpha = composite_alpha;
 
-    // Set additional usage flag for blitting from the swapchain images if supported
-    VkFormatProperties format_properties;
-    vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)*_device, image_format, &format_properties);
-
-    if (format_properties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT)
-    {
-        create_info.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    }
-
     VULKAN_CHECK_RESULT(vkCreateSwapchainKHR((VkDevice)*_device, &create_info, nullptr, &_swapchain));
 
     if (old_swapchain)
@@ -141,7 +134,7 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
         cleanup_swapchain(old_swapchain);
     }
 
-    if (!get_images(image_format))
+    if (!get_images())
     {
         return false;
     }
@@ -155,9 +148,34 @@ void VulkanSwapchain::destroy()
     {
         cleanup_swapchain(_swapchain);
     }
+
+    if (_image_acquired_semaphore)
+    {
+        vkDestroySemaphore((VkDevice)*_device, _image_acquired_semaphore, nullptr);
+    }
 }
 
-bool VulkanSwapchain::get_images(VkFormat image_format)
+bool VulkanSwapchain::begin_frame()
+{
+    VULKAN_CHECK_RESULT(vkAcquireNextImageKHR((VkDevice)*_device, _swapchain, UINT64_MAX, _image_acquired_semaphore, nullptr, &_acquired_image_index));
+    return true;
+}
+
+bool VulkanSwapchain::end_frame(uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores)
+{
+    VkPresentInfoKHR present_info = {};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.waitSemaphoreCount = wait_semaphore_count;
+    present_info.pWaitSemaphores = wait_semaphores;
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains = &_swapchain;
+    present_info.pImageIndices = &_acquired_image_index;
+    VULKAN_CHECK_RESULT(vkQueuePresentKHR(_device->get_graphics_queue(), &present_info));
+    _acquired_image_index = UINT32_MAX;
+    return true;
+}
+
+bool VulkanSwapchain::get_images()
 {
     uint32_t image_count;
     VULKAN_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, nullptr));
@@ -165,19 +183,18 @@ bool VulkanSwapchain::get_images(VkFormat image_format)
     _images.resize(image_count);
     VULKAN_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, _images.data()));
 
-    // Get the swap chain buffers containing the image and imageview
-    _image_views.resize(image_count);
-
     VkImageViewCreateInfo image_view_create_info = {};
     image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    image_view_create_info.format = image_format;
+    image_view_create_info.format = _image_format;
     image_view_create_info.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
     image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     image_view_create_info.subresourceRange.baseMipLevel = 0;
     image_view_create_info.subresourceRange.levelCount = 1;
     image_view_create_info.subresourceRange.baseArrayLayer = 0;
     image_view_create_info.subresourceRange.layerCount = 1;
+
+    _image_views.resize(image_count);
 
     for (uint32_t i = 0; i < image_count; ++i)
     {

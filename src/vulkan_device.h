@@ -23,11 +23,18 @@ public:
     VkPhysicalDeviceFeatures get_features() const { return _features; }
     VkSurfaceKHR get_surface() const { return _surface; }
     VkSurfaceCapabilitiesKHR get_surface_capabilities() const { return _surface_capabilities; }
+    VkQueue get_graphics_queue() const { return _graphics_queue; }
+    uint32_t get_graphics_queue_index() const { return _graphics_queue_index; }
 
     const std::vector<VkSurfaceFormatKHR>& get_surface_formats() const { return _surface_formats; }
     const std::vector<VkPresentModeKHR>& get_present_modes() const { return _present_modes; }
 
     uint32_t find_queue_family_index(VkQueueFlags flags) const;
+
+    VkResult create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool);
+
+    void submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask,
+                uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores);
 
 private:
     std::vector<VkQueueFamilyProperties> _queue_family_properties;
