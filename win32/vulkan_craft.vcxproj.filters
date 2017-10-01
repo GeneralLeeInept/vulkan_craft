@@ -7,6 +7,9 @@
     <Filter Include="src">
       <UniqueIdentifier>{ed5450d8-2f49-40c8-b78d-3420979baeb5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{8a1a30f7-6bc2-4074-a035-e998bf2d439d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\vulkan_craft.cpp">
@@ -35,5 +38,13 @@
     <ClInclude Include="..\src\vulkan_swapchain.h">
       <Filter>src</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\res\shaders\triangle.vert">
+      <Filter>shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\triangle.frag">
+      <Filter>shaders</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

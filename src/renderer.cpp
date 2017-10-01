@@ -126,7 +126,7 @@ bool Renderer::draw_frame()
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     VULKAN_CHECK_RESULT(vkBeginCommandBuffer(command_buffer, &begin_info));
 
-    VkClearValue clear_value = { 1.0f, 0.0f, 0.0f, 1.0f };
+    VkClearValue clear_value = { 0.0f, 0.0f, 0.0f, 1.0f };
     VkRenderPassBeginInfo render_pass_begin_info = {};
     render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_begin_info.renderPass = _render_pass;

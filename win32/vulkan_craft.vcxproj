@@ -79,6 +79,22 @@
     <ClInclude Include="..\src\vulkan_device.h" />
     <ClInclude Include="..\src\vulkan_swapchain.h" />
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\res\shaders\triangle.frag">
+      <FileType>Document</FileType>
+      <Command>$(VK_SDK_PATH)\bin\glslangValidator.exe -V %(Identity) -o $(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Command>
+      <Message>Compiling SPIR-V</Message>
+      <Outputs>$(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Outputs>
+      <LinkObjects>false</LinkObjects>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\triangle.vert">
+      <FileType>Document</FileType>
+      <Command>$(VK_SDK_PATH)\bin\glslangValidator.exe -V %(Identity) -o $(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Command>
+      <Message>Compiling SPIR-V</Message>
+      <Outputs>$(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Outputs>
+      <LinkObjects>false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
