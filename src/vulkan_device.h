@@ -22,7 +22,7 @@ public:
     VkPhysicalDeviceProperties get_properties() const { return _properties; }
     VkPhysicalDeviceFeatures get_features() const { return _features; }
     VkSurfaceKHR get_surface() const { return _surface; }
-    VkSurfaceCapabilitiesKHR get_surface_capabilities() const { return _surface_capabilities; }
+    VkResult get_surface_capabilities(VkSurfaceCapabilitiesKHR& surface_capabilities) const;
     VkQueue get_graphics_queue() const { return _graphics_queue; }
     uint32_t get_graphics_queue_index() const { return _graphics_queue_index; }
 
@@ -42,7 +42,6 @@ private:
     std::vector<VkPresentModeKHR> _present_modes;
     VkPhysicalDeviceProperties _properties = {};
     VkPhysicalDeviceFeatures _features = {};
-    VkSurfaceCapabilitiesKHR _surface_capabilities = {};
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
     VkSurfaceKHR _surface = VK_NULL_HANDLE;
     VkDevice _device = VK_NULL_HANDLE;

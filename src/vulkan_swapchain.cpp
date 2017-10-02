@@ -42,7 +42,8 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
 {
     VkSwapchainKHR old_swapchain = _swapchain;
 
-    VkSurfaceCapabilitiesKHR surface_capabilities = _device->get_surface_capabilities();
+    VkSurfaceCapabilitiesKHR surface_capabilities;
+    VULKAN_CHECK_RESULT(_device->get_surface_capabilities(surface_capabilities));
 
     if (surface_capabilities.currentExtent.width == UINT32_MAX)
     {

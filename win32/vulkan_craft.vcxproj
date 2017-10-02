@@ -63,7 +63,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\graphics_pipeline.cpp" />
     <ClCompile Include="..\src\renderer.cpp" />
+    <ClCompile Include="..\src\shader_cache.cpp" />
     <ClCompile Include="..\src\vulkan_craft.cpp" />
     <ClCompile Include="..\src\vulkan_device.cpp" />
     <ClCompile Include="..\src\vulkan_swapchain.cpp" />
@@ -74,7 +76,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\file.h" />
+    <ClInclude Include="..\src\graphics_pipeline.h" />
     <ClInclude Include="..\src\renderer.h" />
+    <ClInclude Include="..\src\shader_cache.h" />
     <ClInclude Include="..\src\vulkan.h" />
     <ClInclude Include="..\src\vulkan_device.h" />
     <ClInclude Include="..\src\vulkan_swapchain.h" />

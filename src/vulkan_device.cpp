@@ -13,7 +13,6 @@ VulkanDevice& VulkanDevice::operator=(VulkanDevice&& rhs)
 
     _properties = rhs._properties;
     _features = rhs._features;
-    _surface_capabilities = rhs._surface_capabilities;
 
     _physical_device = rhs._physical_device;
     _surface = rhs._surface;
@@ -23,7 +22,6 @@ VulkanDevice& VulkanDevice::operator=(VulkanDevice&& rhs)
 
     rhs._properties = {};
     rhs._features = {};
-    rhs._surface_capabilities = {};
 
     rhs._physical_device = VK_NULL_HANDLE;
     rhs._surface = VK_NULL_HANDLE;
@@ -43,7 +41,6 @@ bool VulkanDevice::initialise(VkPhysicalDevice device, VkSurfaceKHR surface)
     vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
     _queue_family_properties.resize(count);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &count, _queue_family_properties.data());
-    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &_surface_capabilities));
     VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, nullptr));
     _surface_formats.resize(count);
     VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, _surface_formats.data()));
@@ -91,6 +88,11 @@ void VulkanDevice::destroy()
         vkDestroyDevice(_device, nullptr);
         _device = VK_NULL_HANDLE;
     }
+}
+
+VkResult VulkanDevice::get_surface_capabilities(VkSurfaceCapabilitiesKHR& surface_capabilities) const
+{
+    return vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physical_device, _surface, &surface_capabilities);
 }
 
 uint32_t VulkanDevice::find_queue_family_index(VkQueueFlags flags) const

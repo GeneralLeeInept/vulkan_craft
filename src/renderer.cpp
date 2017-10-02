@@ -20,6 +20,11 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    if (!_shader_cache.initialise((VkDevice)_device))
+    {
+        return false;
+    }
+
     if (!create_semaphores())
     {
         return false;
@@ -35,6 +40,19 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    _vertex_shader = _shader_cache.load("..\\res\\shaders\\triangle.vert.spv");
+    _fragment_shader = _shader_cache.load("..\\res\\shaders\\triangle.frag.spv");
+
+    if (!_vertex_shader && !_fragment_shader)
+    {
+        return false;
+    }
+
+    if (!create_graphics_pipeline())
+    {
+        return false;
+    }
+
     _valid_state = true;
 
     return true;
@@ -43,6 +61,8 @@ bool Renderer::initialise(GLFWwindow* window)
 void Renderer::shutdown()
 {
     invalidate();
+
+    _graphics_pipeline.destroy();
 
     _swapchain.destroy();
 
@@ -55,6 +75,9 @@ void Renderer::shutdown()
     {
         vkDestroySemaphore((VkDevice)_device, _drawing_complete_semaphore, nullptr);
     }
+
+    _shader_cache.release(_vertex_shader);
+    _shader_cache.release(_fragment_shader);
 
     _device.destroy();
 
@@ -86,6 +109,11 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
     }
 
     if (!create_render_pass())
+    {
+        return false;
+    }
+
+    if (!_graphics_pipeline.create(_swapchain, _render_pass))
     {
         return false;
     }
@@ -137,6 +165,8 @@ bool Renderer::draw_frame()
     render_pass_begin_info.pClearValues = &clear_value;
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)_graphics_pipeline);
+    vkCmdDraw(command_buffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(command_buffer);
 
     VULKAN_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
@@ -178,11 +208,12 @@ void Renderer::invalidate()
         }
 
         _frame_buffers.clear();
+        _graphics_pipeline.invalidate();
 
         if (_render_pass)
         {
             vkDestroyRenderPass((VkDevice)_device, _render_pass, nullptr);
-            _render_pass = nullptr;
+            _render_pass = VK_NULL_HANDLE;
         }
     }
 }
@@ -380,4 +411,67 @@ bool Renderer::create_frame_buffers()
     }
 
     return true;
+}
+
+bool Renderer::create_graphics_pipeline()
+{
+    VkPipelineShaderStageCreateInfo shader_stages[2];
+    shader_stages[0] = {};
+    shader_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shader_stages[0].module = _vertex_shader;
+    shader_stages[0].pName = "main";
+    shader_stages[1] = {};
+    shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shader_stages[1].module = _fragment_shader;
+    shader_stages[1].pName = "main";
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {};
+    vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {};
+    input_assembly_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly_state_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly_state_create_info.primitiveRestartEnable = VK_FALSE;
+
+    VkPipelineTessellationStateCreateInfo tessellation_state_create_info = {};
+    tessellation_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+
+    VkPipelineRasterizationStateCreateInfo rasterization_state_create_info = {};
+    rasterization_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization_state_create_info.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization_state_create_info.cullMode = VK_CULL_MODE_NONE;
+    rasterization_state_create_info.lineWidth = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisample_state_create_info = {};
+    multisample_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisample_state_create_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info = {};
+    depth_stencil_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+    VkPipelineColorBlendAttachmentState colour_blend_attachment_state = {};
+    colour_blend_attachment_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
+
+    VkPipelineColorBlendStateCreateInfo colour_blend_state_create_info = {};
+    colour_blend_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colour_blend_state_create_info.attachmentCount = 1;
+    colour_blend_state_create_info.pAttachments = &colour_blend_attachment_state;
+
+    VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
+    pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+    VkGraphicsPipelineCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    create_info.stageCount = 2;
+    create_info.pStages = shader_stages;
+    create_info.pVertexInputState = &vertex_input_state_create_info;
+    create_info.pInputAssemblyState = &input_assembly_state_create_info;
+    create_info.pRasterizationState = &rasterization_state_create_info;
+    create_info.pMultisampleState = &multisample_state_create_info;
+    create_info.pDepthStencilState = &depth_stencil_state_create_info;
+    create_info.pColorBlendState = &colour_blend_state_create_info;
+
+    return _graphics_pipeline.initialise(_device, create_info, pipeline_layout_create_info);
 }

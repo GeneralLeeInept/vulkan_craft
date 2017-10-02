@@ -1,5 +1,7 @@
 #pragma once
 
+#include "graphics_pipeline.h"
+#include "shader_cache.h"
 #include "vulkan.h"
 
 class Renderer
@@ -21,7 +23,9 @@ private:
     bool create_command_pool();
     bool create_render_pass();
     bool create_frame_buffers();
+    bool create_graphics_pipeline();
 
+    ShaderCache _shader_cache;
     VulkanDevice _device;
     VulkanSwapchain _swapchain;
     std::vector<VkFramebuffer> _frame_buffers;
@@ -32,6 +36,9 @@ private:
     VkRenderPass _render_pass = VK_NULL_HANDLE;
     VkCommandPool _command_pool = VK_NULL_HANDLE;
     VkSemaphore _drawing_complete_semaphore = VK_NULL_HANDLE;
+    VkShaderModule _vertex_shader = VK_NULL_HANDLE;
+    VkShaderModule _fragment_shader = VK_NULL_HANDLE;
+    GraphicsPipeline _graphics_pipeline;
 
     bool _valid_state = false;
 };

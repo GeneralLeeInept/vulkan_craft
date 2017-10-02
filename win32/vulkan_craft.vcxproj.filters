@@ -24,6 +24,12 @@
     <ClCompile Include="..\src\vulkan_swapchain.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\shader_cache.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphics_pipeline.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\renderer.h">
@@ -36,6 +42,15 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\vulkan_swapchain.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\shader_cache.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\file.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphics_pipeline.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
