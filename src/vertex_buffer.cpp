@@ -3,7 +3,7 @@
 #include "vulkan.h"
 #include "vulkan_device.h"
 
-uint32_t get_vertex_size(const VertexDecl& decl)
+static uint32_t get_vertex_size(const VertexDecl& decl)
 {
     uint32_t vertex_size = 0;
 

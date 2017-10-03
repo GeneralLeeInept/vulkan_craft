@@ -32,6 +32,7 @@ private:
     VulkanDevice _device;
     Swapchain _swapchain;
     RenderPass _render_pass;
+    GraphicsPipelineFactory _graphics_pipeline_factory;
     GraphicsPipeline _graphics_pipeline;
     VertexBuffer _vertex_buffer;
     std::vector<VkFramebuffer> _frame_buffers;

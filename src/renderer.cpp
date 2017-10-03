@@ -48,6 +48,8 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    _graphics_pipeline_factory.initialise(_device, _swapchain, _render_pass, 0);
+
     _vertex_shader = _shader_cache.load("..\\res\\shaders\\triangle.vert.spv");
     _fragment_shader = _shader_cache.load("..\\res\\shaders\\triangle.frag.spv");
 
@@ -55,6 +57,9 @@ bool Renderer::initialise(GLFWwindow* window)
     {
         return false;
     }
+
+    _graphics_pipeline_factory.set_shader(VK_SHADER_STAGE_VERTEX_BIT, _vertex_shader, "main");
+    _graphics_pipeline_factory.set_shader(VK_SHADER_STAGE_FRAGMENT_BIT, _fragment_shader, "main");
 
     if (!create_vertex_buffer())
     {
@@ -384,73 +389,7 @@ bool Renderer::create_frame_buffers()
 
 bool Renderer::create_graphics_pipeline()
 {
-    VkPipelineShaderStageCreateInfo shader_stages[2];
-    shader_stages[0] = {};
-    shader_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shader_stages[0].module = _vertex_shader;
-    shader_stages[0].pName = "main";
-    shader_stages[1] = {};
-    shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shader_stages[1].module = _fragment_shader;
-    shader_stages[1].pName = "main";
-
-    std::vector<VkVertexInputBindingDescription> vertex_bindings;
-    std::vector<VkVertexInputAttributeDescription> vertex_attributes;
-    _vertex_buffer.bind(vertex_bindings, vertex_attributes);
-
-    VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {};
-    vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_state_create_info.vertexBindingDescriptionCount = (uint32_t)vertex_bindings.size();
-    vertex_input_state_create_info.pVertexBindingDescriptions = vertex_bindings.data();
-    vertex_input_state_create_info.vertexAttributeDescriptionCount = (uint32_t)vertex_attributes.size();
-    vertex_input_state_create_info.pVertexAttributeDescriptions = vertex_attributes.data();
-
-    VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {};
-    input_assembly_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly_state_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly_state_create_info.primitiveRestartEnable = VK_FALSE;
-
-    VkPipelineTessellationStateCreateInfo tessellation_state_create_info = {};
-    tessellation_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
-
-    VkPipelineRasterizationStateCreateInfo rasterization_state_create_info = {};
-    rasterization_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization_state_create_info.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization_state_create_info.cullMode = VK_CULL_MODE_NONE;
-    rasterization_state_create_info.lineWidth = 1.0f;
-
-    VkPipelineMultisampleStateCreateInfo multisample_state_create_info = {};
-    multisample_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample_state_create_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-    VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info = {};
-    depth_stencil_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-
-    VkPipelineColorBlendAttachmentState colour_blend_attachment_state = {};
-    colour_blend_attachment_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
-
-    VkPipelineColorBlendStateCreateInfo colour_blend_state_create_info = {};
-    colour_blend_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colour_blend_state_create_info.attachmentCount = 1;
-    colour_blend_state_create_info.pAttachments = &colour_blend_attachment_state;
-
-    VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
-    pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-    VkGraphicsPipelineCreateInfo create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    create_info.stageCount = 2;
-    create_info.pStages = shader_stages;
-    create_info.pVertexInputState = &vertex_input_state_create_info;
-    create_info.pInputAssemblyState = &input_assembly_state_create_info;
-    create_info.pRasterizationState = &rasterization_state_create_info;
-    create_info.pMultisampleState = &multisample_state_create_info;
-    create_info.pDepthStencilState = &depth_stencil_state_create_info;
-    create_info.pColorBlendState = &colour_blend_state_create_info;
-
-    return _graphics_pipeline.initialise(_device, _swapchain, _render_pass, create_info, pipeline_layout_create_info);
+    return _graphics_pipeline_factory.create_pipeline(_graphics_pipeline);
 }
 
 bool Renderer::create_vertex_buffer()
@@ -461,6 +400,8 @@ bool Renderer::create_vertex_buffer()
 
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec2) },
                                { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour), sizeof(glm::vec3) } };
+
+    _graphics_pipeline_factory.set_vertex_decl(decl);
 
     if (!_vertex_buffer.create(_device, decl, 3))
     {
