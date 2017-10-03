@@ -18,7 +18,8 @@ uint32_t get_vertex_size(const VertexDecl& decl)
 bool VertexBuffer::create(VulkanDevice& device, const VertexDecl& decl, uint32_t count)
 {
     _device = &device;
-
+    _decl = decl;
+    _count = count;
     _memory_size = get_vertex_size(decl) * count;
 
     VkBufferCreateInfo buffer_create_info = {};
@@ -89,9 +90,10 @@ void VertexBuffer::unmap()
     vkUnmapMemory((VkDevice)*_device, _device_memory);
 }
 
-bool VertexBuffer::bind(uint32_t binding, std::vector<VkVertexInputBindingDescription>& bindings,
-                        std::vector<VkVertexInputAttributeDescription>& attributes)
+bool VertexBuffer::bind(std::vector<VkVertexInputBindingDescription>& bindings, std::vector<VkVertexInputAttributeDescription>& attributes)
 {
+    uint32_t binding = (uint32_t)bindings.size();
+
     VkVertexInputBindingDescription binding_description;
     binding_description.binding = binding;
     binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;

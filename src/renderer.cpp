@@ -56,12 +56,12 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!create_graphics_pipeline())
+    if (!create_vertex_buffer())
     {
         return false;
     }
 
-    if (!create_vertex_buffer())
+    if (!create_graphics_pipeline())
     {
         return false;
     }
@@ -75,8 +75,8 @@ void Renderer::shutdown()
 {
     invalidate();
 
-    _vertex_buffer.destroy();
     _graphics_pipeline.destroy();
+    _vertex_buffer.destroy();
     _swapchain.destroy();
 
     if (_command_pool)
@@ -396,27 +396,16 @@ bool Renderer::create_graphics_pipeline()
     shader_stages[1].module = _fragment_shader;
     shader_stages[1].pName = "main";
 
-    VkVertexInputBindingDescription vertex_binding = {};
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(Vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    VkVertexInputAttributeDescription vertex_attributes[2];
-    vertex_attributes[0].location = 0;
-    vertex_attributes[0].binding = 0;
-    vertex_attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[0].offset = offsetof(Vertex, position);
-    vertex_attributes[1].location = 1;
-    vertex_attributes[1].binding = 0;
-    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(Vertex, colour);
+    std::vector<VkVertexInputBindingDescription> vertex_bindings;
+    std::vector<VkVertexInputAttributeDescription> vertex_attributes;
+    _vertex_buffer.bind(vertex_bindings, vertex_attributes);
 
     VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {};
     vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
-    vertex_input_state_create_info.pVertexBindingDescriptions = &vertex_binding;
-    vertex_input_state_create_info.vertexAttributeDescriptionCount = 2;
-    vertex_input_state_create_info.pVertexAttributeDescriptions = vertex_attributes;
+    vertex_input_state_create_info.vertexBindingDescriptionCount = (uint32_t)vertex_bindings.size();
+    vertex_input_state_create_info.pVertexBindingDescriptions = vertex_bindings.data();
+    vertex_input_state_create_info.vertexAttributeDescriptionCount = (uint32_t)vertex_attributes.size();
+    vertex_input_state_create_info.pVertexAttributeDescriptions = vertex_attributes.data();
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {};
     input_assembly_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -471,7 +460,7 @@ bool Renderer::create_vertex_buffer()
                                      { { -0.5f, 0.375f }, { 0.0f, 0.0f, 1.0f } } };
 
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec2) },
-                               { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) } };
+                               { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour), sizeof(glm::vec3) } };
 
     if (!_vertex_buffer.create(_device, decl, 3))
     {

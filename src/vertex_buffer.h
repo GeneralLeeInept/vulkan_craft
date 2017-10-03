@@ -26,7 +26,7 @@ public:
 
     operator VkBuffer() { return _vertex_buffer; }
 
-    bool bind(uint32_t binding, std::vector<VkVertexInputBindingDescription>& bindings, std::vector<VkVertexInputAttributeDescription>& attributes);
+    bool bind(std::vector<VkVertexInputBindingDescription>& bindings, std::vector<VkVertexInputAttributeDescription>& attributes);
 
 private:
     VertexDecl _decl;
