@@ -25,6 +25,7 @@ private:
     bool create_command_pool();
     bool create_frame_buffers();
     bool create_graphics_pipeline();
+    bool create_vertex_buffer();
 
     ShaderCache _shader_cache;
     VulkanDevice _device;
@@ -40,6 +41,9 @@ private:
     VkSemaphore _drawing_complete_semaphore = VK_NULL_HANDLE;
     VkShaderModule _vertex_shader = VK_NULL_HANDLE;
     VkShaderModule _fragment_shader = VK_NULL_HANDLE;
+
+    VkBuffer _vertex_buffer;
+    VkDeviceMemory _vertex_buffer_memory;
 
     bool _valid_state = false;
 };

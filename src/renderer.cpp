@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 
+#include "geometry.h"
 #include "vulkan.h"
 
 bool Renderer::initialise(GLFWwindow* window)
@@ -60,6 +61,11 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    if (!create_vertex_buffer())
+    {
+        return false;
+    }
+
     _valid_state = true;
 
     return true;
@@ -68,6 +74,16 @@ bool Renderer::initialise(GLFWwindow* window)
 void Renderer::shutdown()
 {
     invalidate();
+
+    if (_vertex_buffer)
+    {
+        vkDestroyBuffer((VkDevice)_device, _vertex_buffer, nullptr);
+    }
+
+    if (_vertex_buffer_memory)
+    {
+        vkFreeMemory((VkDevice)_device, _vertex_buffer_memory, nullptr);
+    }
 
     _graphics_pipeline.destroy();
 
@@ -154,12 +170,12 @@ bool Renderer::draw_frame()
     alloc_info.commandBufferCount = 1;
 
     VkCommandBuffer command_buffer;
-    VULKAN_CHECK_RESULT(vkAllocateCommandBuffers((VkDevice)_device, &alloc_info, &command_buffer));
+    VK_CHECK_RESULT(vkAllocateCommandBuffers((VkDevice)_device, &alloc_info, &command_buffer));
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    VULKAN_CHECK_RESULT(vkBeginCommandBuffer(command_buffer, &begin_info));
+    VK_CHECK_RESULT(vkBeginCommandBuffer(command_buffer, &begin_info));
 
     VkClearValue clear_value = { 0.0f, 0.0f, 0.0f, 1.0f };
     VkRenderPassBeginInfo render_pass_begin_info = {};
@@ -173,10 +189,12 @@ bool Renderer::draw_frame()
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)_graphics_pipeline);
+    VkDeviceSize offsets = 0;
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, &_vertex_buffer, &offsets);
     vkCmdDraw(command_buffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(command_buffer);
 
-    VULKAN_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
+    VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
 
     VkSemaphore image_acquired_semaphore = _swapchain.get_image_acquired_semaphore();
     VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -256,7 +274,7 @@ bool Renderer::create_instance()
     create_info.ppEnabledExtensionNames = extension_names.data();
 #endif
 
-    VULKAN_CHECK_RESULT(vkCreateInstance(&create_info, nullptr, &_vulkan_instance));
+    VK_CHECK_RESULT(vkCreateInstance(&create_info, nullptr, &_vulkan_instance));
 
 #if !defined(NDEBUG)
     PFN_vkCreateDebugReportCallbackEXT func =
@@ -270,11 +288,11 @@ bool Renderer::create_instance()
                 VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
         debug_report_create_info.pfnCallback = debug_callback;
         debug_report_create_info.pUserData = nullptr;
-        VULKAN_CHECK_RESULT(func(_vulkan_instance, &debug_report_create_info, nullptr, &_debug_report));
+        VK_CHECK_RESULT(func(_vulkan_instance, &debug_report_create_info, nullptr, &_debug_report));
     }
 #endif
 
-    VULKAN_CHECK_RESULT(glfwCreateWindowSurface(_vulkan_instance, _window, nullptr, &_surface));
+    VK_CHECK_RESULT(glfwCreateWindowSurface(_vulkan_instance, _window, nullptr, &_surface));
 
     return true;
 }
@@ -317,7 +335,7 @@ static VulkanDevice pick_device(const std::vector<VkPhysicalDevice>& devices, Vk
 bool Renderer::create_device()
 {
     uint32_t count;
-    VULKAN_CHECK_RESULT(vkEnumeratePhysicalDevices(_vulkan_instance, &count, nullptr));
+    VK_CHECK_RESULT(vkEnumeratePhysicalDevices(_vulkan_instance, &count, nullptr));
 
     if (!count)
     {
@@ -325,7 +343,7 @@ bool Renderer::create_device()
     }
 
     std::vector<VkPhysicalDevice> devices(count);
-    VULKAN_CHECK_RESULT(vkEnumeratePhysicalDevices(_vulkan_instance, &count, devices.data()));
+    VK_CHECK_RESULT(vkEnumeratePhysicalDevices(_vulkan_instance, &count, devices.data()));
 
     _device = pick_device(devices, _surface);
 
@@ -341,13 +359,13 @@ bool Renderer::create_semaphores()
 {
     VkSemaphoreCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    VULKAN_CHECK_RESULT(vkCreateSemaphore((VkDevice)_device, &create_info, nullptr, &_drawing_complete_semaphore));
+    VK_CHECK_RESULT(vkCreateSemaphore((VkDevice)_device, &create_info, nullptr, &_drawing_complete_semaphore));
     return true;
 }
 
 bool Renderer::create_command_pool()
 {
-    VULKAN_CHECK_RESULT(_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, &_command_pool));
+    VK_CHECK_RESULT(_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, &_command_pool));
     return true;
 }
 
@@ -366,7 +384,7 @@ bool Renderer::create_frame_buffers()
         create_info.pAttachments = &image_view;
 
         VkFramebuffer frame_buffer;
-        VULKAN_CHECK_RESULT(vkCreateFramebuffer((VkDevice)_device, &create_info, nullptr, &frame_buffer));
+        VK_CHECK_RESULT(vkCreateFramebuffer((VkDevice)_device, &create_info, nullptr, &frame_buffer));
         _frame_buffers.push_back(frame_buffer);
     }
 
@@ -387,8 +405,27 @@ bool Renderer::create_graphics_pipeline()
     shader_stages[1].module = _fragment_shader;
     shader_stages[1].pName = "main";
 
+    VkVertexInputBindingDescription vertex_binding = {};
+    vertex_binding.binding = 0;
+    vertex_binding.stride = sizeof(Vertex);
+    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    VkVertexInputAttributeDescription vertex_attributes[2];
+    vertex_attributes[0].location = 0;
+    vertex_attributes[0].binding = 0;
+    vertex_attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
+    vertex_attributes[0].offset = offsetof(Vertex, position);
+    vertex_attributes[1].location = 1;
+    vertex_attributes[1].binding = 0;
+    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertex_attributes[1].offset = offsetof(Vertex, colour);
+
     VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {};
     vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
+    vertex_input_state_create_info.pVertexBindingDescriptions = &vertex_binding;
+    vertex_input_state_create_info.vertexAttributeDescriptionCount = 2;
+    vertex_input_state_create_info.pVertexAttributeDescriptions = vertex_attributes;
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {};
     input_assembly_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -434,4 +471,52 @@ bool Renderer::create_graphics_pipeline()
     create_info.pColorBlendState = &colour_blend_state_create_info;
 
     return _graphics_pipeline.initialise(_device, _swapchain, _render_pass, create_info, pipeline_layout_create_info);
+}
+
+bool Renderer::create_vertex_buffer()
+{
+    static Vertex vertex_data[3] = { { { 0.0f, -0.375f }, { 1.0f, 0.0f, 0.0f } },
+                                     { { 0.5f, 0.375f }, { 0.0f, 1.0f, 0.0f } },
+                                     { { -0.5f, 0.375f }, { 0.0f, 0.0f, 1.0f } } };
+
+    static uint32_t vertex_data_size = (uint32_t)sizeof(vertex_data);
+
+    VkBufferCreateInfo buffer_create_info = {};
+    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_create_info.size = vertex_data_size;
+    buffer_create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VK_CHECK_RESULT(vkCreateBuffer((VkDevice)_device, &buffer_create_info, nullptr, &_vertex_buffer));
+
+    const VkPhysicalDeviceMemoryProperties& memory_properties = _device.get_memory_properties();
+    uint32_t memory_type_index;
+    VkMemoryPropertyFlags desired_properties =
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    for (memory_type_index = 0; memory_type_index < memory_properties.memoryTypeCount; ++memory_type_index)
+    {
+        if ((memory_properties.memoryTypes[memory_type_index].propertyFlags & desired_properties) == desired_properties)
+        {
+            break;
+        }
+    }
+
+    if (memory_type_index == memory_properties.memoryTypeCount)
+    {
+        return false;
+    }
+
+    VkMemoryAllocateInfo allocate_info = {};
+    allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocate_info.allocationSize = vertex_data_size;
+    allocate_info.memoryTypeIndex = memory_type_index;
+    VK_CHECK_RESULT(vkAllocateMemory((VkDevice)_device, &allocate_info, nullptr, &_vertex_buffer_memory));
+
+    VK_CHECK_RESULT(vkBindBufferMemory((VkDevice)_device, _vertex_buffer, _vertex_buffer_memory, 0));
+
+    void* mapped_memory;
+    VK_CHECK_RESULT(vkMapMemory((VkDevice)_device, _vertex_buffer_memory, 0, vertex_data_size, 0, &mapped_memory));
+    memcpy(mapped_memory, vertex_data, vertex_data_size);
+    vkUnmapMemory((VkDevice)_device, _vertex_buffer_memory);
+
+    return true;
 }

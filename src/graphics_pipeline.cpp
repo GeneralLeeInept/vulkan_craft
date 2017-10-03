@@ -13,21 +13,39 @@ bool GraphicsPipeline::initialise(VulkanDevice& device, Swapchain& swapchain, Re
     _swapchain = &swapchain;
 
     _layout_create_info = layout_create_info;
-    VULKAN_CHECK_RESULT(vkCreatePipelineLayout((VkDevice)*_device, &_layout_create_info, nullptr, &_layout));
+    VK_CHECK_RESULT(vkCreatePipelineLayout((VkDevice)*_device, &_layout_create_info, nullptr, &_layout));
 
     _shader_stages.resize(pipeline_create_info.stageCount);
+    memcpy(_shader_stages.data(), pipeline_create_info.pStages, sizeof(_shader_stages[0]) * pipeline_create_info.stageCount);
 
-    for (uint32_t stage = 0; stage < pipeline_create_info.stageCount; ++stage)
+    _vertex_input_state = *pipeline_create_info.pVertexInputState;
+
+    uint32_t binding_count = pipeline_create_info.pVertexInputState->vertexBindingDescriptionCount;
+
+    if (binding_count)
     {
-        _shader_stages[stage] = pipeline_create_info.pStages[stage];
-        // TODO: deep copy
+        const VkVertexInputBindingDescription* src_bindings = pipeline_create_info.pVertexInputState->pVertexBindingDescriptions;
+        _vertex_bindings.resize(binding_count);
+        memcpy(_vertex_bindings.data(), src_bindings, sizeof(_vertex_bindings[0]) * binding_count);
+        _vertex_input_state.pVertexBindingDescriptions = _vertex_bindings.data();
     }
 
-    _vertex_input_state = *pipeline_create_info.pVertexInputState; // TODO: deep copy
+    uint32_t attribute_count = pipeline_create_info.pVertexInputState->vertexAttributeDescriptionCount; 
+
+    if (attribute_count)
+    {
+        const VkVertexInputAttributeDescription* src_attributes = pipeline_create_info.pVertexInputState->pVertexAttributeDescriptions;
+        _vertex_attributes.resize(attribute_count);
+        memcpy(_vertex_attributes.data(), src_attributes, sizeof(_vertex_attributes[0]) * attribute_count);
+        _vertex_input_state.pVertexAttributeDescriptions = _vertex_attributes.data();
+    }
+
+    // TODO: deep copy
     _input_assembly_state = *pipeline_create_info.pInputAssemblyState;
     _rasterisation_state = *pipeline_create_info.pRasterizationState;
     _multisample_state = *pipeline_create_info.pMultisampleState;
     _depth_stencil_state = *pipeline_create_info.pDepthStencilState;
+    /////
 
     _attachments.resize(pipeline_create_info.pColorBlendState->attachmentCount);
 
@@ -87,7 +105,7 @@ bool GraphicsPipeline::create()
     _pipeline_create_info.layout = _layout;
     _pipeline_create_info.renderPass = (VkRenderPass)*_render_pass;
 
-    VULKAN_CHECK_RESULT(vkCreateGraphicsPipelines((VkDevice)*_device, nullptr, 1, &_pipeline_create_info, nullptr, &_pipeline));
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines((VkDevice)*_device, nullptr, 1, &_pipeline_create_info, nullptr, &_pipeline));
 
     return true;
 }

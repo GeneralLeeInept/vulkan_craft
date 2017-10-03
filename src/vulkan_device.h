@@ -19,11 +19,12 @@ public:
     explicit operator VkPhysicalDevice() const { return _physical_device; }
     explicit operator VkDevice() const { return _device; }
 
-    VkPhysicalDeviceProperties get_properties() const { return _properties; }
-    VkPhysicalDeviceFeatures get_features() const { return _features; }
-    VkSurfaceKHR get_surface() const { return _surface; }
+    const VkPhysicalDeviceMemoryProperties& get_memory_properties() const { return _memory_properties; }
+    const VkPhysicalDeviceProperties& get_properties() const { return _properties; }
+    const VkPhysicalDeviceFeatures& get_features() const { return _features; }
+    const VkSurfaceKHR& get_surface() const { return _surface; }
     VkResult get_surface_capabilities(VkSurfaceCapabilitiesKHR& surface_capabilities) const;
-    VkQueue get_graphics_queue() const { return _graphics_queue; }
+    const VkQueue& get_graphics_queue() const { return _graphics_queue; }
     uint32_t get_graphics_queue_index() const { return _graphics_queue_index; }
 
     const std::vector<VkSurfaceFormatKHR>& get_surface_formats() const { return _surface_formats; }
@@ -40,6 +41,7 @@ private:
     std::vector<VkQueueFamilyProperties> _queue_family_properties;
     std::vector<VkSurfaceFormatKHR> _surface_formats;
     std::vector<VkPresentModeKHR> _present_modes;
+    VkPhysicalDeviceMemoryProperties _memory_properties = {};
     VkPhysicalDeviceProperties _properties = {};
     VkPhysicalDeviceFeatures _features = {};
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;

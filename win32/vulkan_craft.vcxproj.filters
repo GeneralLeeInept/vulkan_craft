@@ -59,6 +59,9 @@
     <ClInclude Include="..\src\render_pass.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\geometry.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\triangle.vert">

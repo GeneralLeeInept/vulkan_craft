@@ -13,6 +13,7 @@ VulkanDevice& VulkanDevice::operator=(VulkanDevice&& rhs)
     _surface_formats = std::move(rhs._surface_formats);
     _present_modes = std::move(rhs._present_modes);
 
+    _memory_properties = rhs._memory_properties;
     _properties = rhs._properties;
     _features = rhs._features;
 
@@ -22,6 +23,7 @@ VulkanDevice& VulkanDevice::operator=(VulkanDevice&& rhs)
     _graphics_queue = rhs._graphics_queue;
     _graphics_queue_index = rhs._graphics_queue_index;
 
+    rhs._memory_properties = {};
     rhs._properties = {};
     rhs._features = {};
 
@@ -43,12 +45,16 @@ bool VulkanDevice::initialise(VkPhysicalDevice device, VkSurfaceKHR surface)
     vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
     _queue_family_properties.resize(count);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &count, _queue_family_properties.data());
-    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, nullptr));
+
+    vkGetPhysicalDeviceMemoryProperties(device, &_memory_properties);
+
+    VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, nullptr));
     _surface_formats.resize(count);
-    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, _surface_formats.data()));
-    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &count, nullptr));
+    VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, _surface_formats.data()));
+
+    VK_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &count, nullptr));
     _present_modes.resize(count);
-    VULKAN_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &count, _present_modes.data()));
+    VK_CHECK_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &count, _present_modes.data()));
 
     _physical_device = device;
     _surface = surface;
@@ -76,7 +82,7 @@ bool VulkanDevice::create()
     create_info.pQueueCreateInfos = &queue_create_info;
     create_info.enabledExtensionCount = (uint32_t)device_extensions.size();
     create_info.ppEnabledExtensionNames = device_extensions.data();
-    VULKAN_CHECK_RESULT(vkCreateDevice(_physical_device, &create_info, nullptr, &_device));
+    VK_CHECK_RESULT(vkCreateDevice(_physical_device, &create_info, nullptr, &_device));
 
     vkGetDeviceQueue(_device, queue_create_info.queueFamilyIndex, 0, &_graphics_queue);
 

@@ -53,7 +53,7 @@ bool RenderPass::create()
     create_info.dependencyCount = 0;
     create_info.pDependencies = nullptr;
 
-    VULKAN_CHECK_RESULT(vkCreateRenderPass((VkDevice)*_device, &create_info, nullptr, &_render_pass));
+    VK_CHECK_RESULT(vkCreateRenderPass((VkDevice)*_device, &create_info, nullptr, &_render_pass));
 
     return true;
 }

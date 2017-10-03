@@ -8,7 +8,7 @@ bool Swapchain::initialise(VulkanDevice& device)
     _device = &device;
     VkSemaphoreCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    VULKAN_CHECK_RESULT(vkCreateSemaphore((VkDevice)device, &create_info, nullptr, &_image_acquired_semaphore));
+    VK_CHECK_RESULT(vkCreateSemaphore((VkDevice)device, &create_info, nullptr, &_image_acquired_semaphore));
     return true;
 }
 
@@ -46,7 +46,7 @@ bool Swapchain::create(uint32_t* width, uint32_t* height, bool vsync)
     VkSwapchainKHR old_swapchain = _swapchain;
 
     VkSurfaceCapabilitiesKHR surface_capabilities;
-    VULKAN_CHECK_RESULT(_device->get_surface_capabilities(surface_capabilities));
+    VK_CHECK_RESULT(_device->get_surface_capabilities(surface_capabilities));
 
     if (surface_capabilities.currentExtent.width == UINT32_MAX)
     {
@@ -130,7 +130,7 @@ bool Swapchain::create(uint32_t* width, uint32_t* height, bool vsync)
     create_info.clipped = VK_TRUE;
     create_info.compositeAlpha = composite_alpha;
 
-    VULKAN_CHECK_RESULT(vkCreateSwapchainKHR((VkDevice)*_device, &create_info, nullptr, &_swapchain));
+    VK_CHECK_RESULT(vkCreateSwapchainKHR((VkDevice)*_device, &create_info, nullptr, &_swapchain));
 
     if (old_swapchain)
     {
@@ -160,7 +160,7 @@ void Swapchain::destroy()
 
 bool Swapchain::begin_frame()
 {
-    VULKAN_CHECK_RESULT(
+    VK_CHECK_RESULT(
             vkAcquireNextImageKHR((VkDevice)*_device, _swapchain, UINT64_MAX, _image_acquired_semaphore, nullptr, &_acquired_image_index));
     return true;
 }
@@ -174,7 +174,7 @@ bool Swapchain::end_frame(uint32_t wait_semaphore_count, VkSemaphore* wait_semap
     present_info.swapchainCount = 1;
     present_info.pSwapchains = &_swapchain;
     present_info.pImageIndices = &_acquired_image_index;
-    VULKAN_CHECK_RESULT(vkQueuePresentKHR(_device->get_graphics_queue(), &present_info));
+    VK_CHECK_RESULT(vkQueuePresentKHR(_device->get_graphics_queue(), &present_info));
     _acquired_image_index = UINT32_MAX;
     return true;
 }
@@ -182,10 +182,10 @@ bool Swapchain::end_frame(uint32_t wait_semaphore_count, VkSemaphore* wait_semap
 bool Swapchain::get_images()
 {
     uint32_t image_count;
-    VULKAN_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, nullptr));
+    VK_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, nullptr));
 
     _images.resize(image_count);
-    VULKAN_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, _images.data()));
+    VK_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, _images.data()));
 
     VkImageViewCreateInfo image_view_create_info = {};
     image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -203,7 +203,7 @@ bool Swapchain::get_images()
     for (uint32_t i = 0; i < image_count; ++i)
     {
         image_view_create_info.image = _images[i];
-        VULKAN_CHECK_RESULT(vkCreateImageView((VkDevice)*_device, &image_view_create_info, nullptr, &_image_views[i]));
+        VK_CHECK_RESULT(vkCreateImageView((VkDevice)*_device, &image_view_create_info, nullptr, &_image_views[i]));
     }
 
     return true;

@@ -20,6 +20,8 @@ public:
     explicit operator VkPipeline() { return _pipeline; }
 
 private:
+    std::vector<VkVertexInputBindingDescription> _vertex_bindings;
+    std::vector<VkVertexInputAttributeDescription> _vertex_attributes;
     std::vector<VkPipelineShaderStageCreateInfo> _shader_stages;
     std::vector<VkPipelineColorBlendAttachmentState> _attachments;
     VkPipelineVertexInputStateCreateInfo _vertex_input_state;
