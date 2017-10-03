@@ -22,6 +22,7 @@ public:
     void invalidate();
 
     explicit operator VkPipeline() { return _pipeline; }
+    explicit operator VkPipelineLayout() { return _layout; }
 
 private:
     std::vector<VkVertexInputBindingDescription> _vertex_bindings;
@@ -35,7 +36,6 @@ private:
     VkPipelineDepthStencilStateCreateInfo _depth_stencil_state;
     VkPipelineColorBlendStateCreateInfo _colour_blend_state;
     VkGraphicsPipelineCreateInfo _pipeline_create_info = {};
-    VkPipelineLayoutCreateInfo _layout_create_info = {};
     VulkanDevice* _device;
     RenderPass* _render_pass;
     Swapchain* _swapchain;
@@ -51,6 +51,9 @@ public:
     void set_shader(VkShaderStageFlagBits stage, VkShaderModule shader, const char* name);
     void set_input_assembly_state(VkPrimitiveTopology topology, bool primtive_restart);
     void set_vertex_decl(const VertexDecl& vertex_decl);
+
+    void add_descriptor_set_layout(VkDescriptorSetLayout layout);
+
     bool create_pipeline(GraphicsPipeline& pipeline);
 
 private:
@@ -59,6 +62,7 @@ private:
     ShaderRefMap _shader_stages;
     std::vector<VkVertexInputBindingDescription> _vertex_bindings;
     std::vector<VkVertexInputAttributeDescription> _vertex_attributes;
+    std::vector<VkDescriptorSetLayout> _descriptor_set_layouts;
     VulkanDevice* _device = nullptr;
     Swapchain* _swapchain = nullptr;
     RenderPass* _render_pass = nullptr;

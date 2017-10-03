@@ -32,7 +32,9 @@ public:
 
     uint32_t find_queue_family_index(VkQueueFlags flags) const;
 
-    VkResult create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool);
+    bool create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool);
+    bool create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                           VkDeviceMemory& memory);
 
     void submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask,
                 uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores);

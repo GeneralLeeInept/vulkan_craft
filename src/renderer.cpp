@@ -33,7 +33,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!create_command_pool())
+    if (!_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, &_command_pool))
     {
         return false;
     }
@@ -66,7 +66,22 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    if (!create_descriptor_set_layout())
+    {
+        return false;
+    }
+
     if (!create_graphics_pipeline())
+    {
+        return false;
+    }
+
+    if (!create_ubo())
+    {
+        return false;
+    }
+
+    if (!create_descriptor_set())
     {
         return false;
     }
@@ -80,7 +95,28 @@ void Renderer::shutdown()
 {
     invalidate();
 
+    if (_ubo)
+    {
+        vkDestroyBuffer((VkDevice)_device, _ubo, nullptr);
+    }
+
+    if (_ubo_memory)
+    {
+        vkFreeMemory((VkDevice)_device, _ubo_memory, nullptr);
+    }
+
     _graphics_pipeline.destroy();
+
+    if (_descriptor_pool)
+    {
+        vkDestroyDescriptorPool((VkDevice)_device, _descriptor_pool, nullptr);
+    }
+
+    if (_descriptor_set_layout)
+    {
+        vkDestroyDescriptorSetLayout((VkDevice)_device, _descriptor_set_layout, nullptr);
+    }
+
     _vertex_buffer.destroy();
     _swapchain.destroy();
 
@@ -158,6 +194,11 @@ bool Renderer::draw_frame()
         return false;
     }
 
+    void* data;
+    VK_CHECK_RESULT(vkMapMemory((VkDevice)_device, _ubo_memory, 0, sizeof(UBO), 0, &data));
+    memcpy(data, &_ubo_data, sizeof(UBO));
+    vkUnmapMemory((VkDevice)_device, _ubo_memory);
+
     VkCommandBufferAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool = _command_pool;
@@ -184,10 +225,16 @@ bool Renderer::draw_frame()
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)_graphics_pipeline);
+
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)_graphics_pipeline, 0, 1, &_descriptor_set, 0,
+                            nullptr);
+
     VkBuffer vertex_buffer = (VkBuffer)_vertex_buffer;
     VkDeviceSize offsets = 0;
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, &offsets);
+
     vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
     vkCmdEndRenderPass(command_buffer);
 
     VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
@@ -359,12 +406,6 @@ bool Renderer::create_semaphores()
     return true;
 }
 
-bool Renderer::create_command_pool()
-{
-    VK_CHECK_RESULT(_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, &_command_pool));
-    return true;
-}
-
 bool Renderer::create_frame_buffers()
 {
     VkFramebufferCreateInfo create_info = {};
@@ -419,4 +460,70 @@ bool Renderer::create_vertex_buffer()
     _vertex_buffer.unmap();
 
     return true;
+}
+
+bool Renderer::create_descriptor_set_layout()
+{
+    VkDescriptorSetLayoutBinding ubo_binding = {};
+    ubo_binding.binding = 0;
+    ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    ubo_binding.descriptorCount = 1;
+    ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layout_info = {};
+    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout_info.bindingCount = 1;
+    layout_info.pBindings = &ubo_binding;
+
+    VK_CHECK_RESULT(vkCreateDescriptorSetLayout((VkDevice)_device, &layout_info, nullptr, &_descriptor_set_layout));
+
+    _graphics_pipeline_factory.add_descriptor_set_layout(_descriptor_set_layout);
+
+    return true;
+}
+
+bool Renderer::create_descriptor_set()
+{
+    VkDescriptorPoolSize pool_size = {};
+    pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_size.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    create_info.maxSets = 1;
+    create_info.poolSizeCount = 1;
+    create_info.pPoolSizes = &pool_size;
+    VK_CHECK_RESULT(vkCreateDescriptorPool((VkDevice)_device, &create_info, nullptr, &_descriptor_pool));
+
+    VkDescriptorSetAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    alloc_info.descriptorPool = _descriptor_pool;
+    alloc_info.descriptorSetCount = 1;
+    alloc_info.pSetLayouts = &_descriptor_set_layout;
+
+    VK_CHECK_RESULT(vkAllocateDescriptorSets((VkDevice)_device, &alloc_info, &_descriptor_set));
+
+    VkDescriptorBufferInfo buffer_info = {};
+    buffer_info.buffer = _ubo;
+    buffer_info.offset = 0;
+    buffer_info.range = sizeof(UBO);
+
+    VkWriteDescriptorSet write = {};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = _descriptor_set;
+    write.dstBinding = 0;
+    write.dstArrayElement = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write.pBufferInfo = &buffer_info;
+
+    vkUpdateDescriptorSets((VkDevice)_device, 1, &write, 0, nullptr);
+
+    return true;
+}
+
+bool Renderer::create_ubo()
+{
+    return _device.create_buffer(sizeof(UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, _ubo, _ubo_memory);
 }

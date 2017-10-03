@@ -148,13 +148,56 @@ uint32_t VulkanDevice::find_queue_family_index(VkQueueFlags flags) const
     return valid;
 }
 
-VkResult VulkanDevice::create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool)
+bool VulkanDevice::create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool)
 {
     VkCommandPoolCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     create_info.flags = flags;
     create_info.queueFamilyIndex = _graphics_queue_index;
-    return vkCreateCommandPool(_device, &create_info, nullptr, command_pool);
+    VK_CHECK_RESULT(vkCreateCommandPool(_device, &create_info, nullptr, command_pool));
+    return true;
+}
+
+bool VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                                     VkDeviceMemory& memory)
+{
+    VkBufferCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = size;
+    create_info.usage = usage;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VK_CHECK_RESULT(vkCreateBuffer(_device, &create_info, nullptr, &buffer));
+
+    VkMemoryRequirements memory_requirements;
+    vkGetBufferMemoryRequirements(_device, buffer, &memory_requirements);
+
+    uint32_t memory_type_index;
+    for (memory_type_index = 0; memory_type_index < _memory_properties.memoryTypeCount; ++memory_type_index)
+    {
+        if ((memory_requirements.memoryTypeBits & (1 << memory_type_index)) == 0)
+        {
+            continue;
+        }
+
+        if ((_memory_properties.memoryTypes[memory_type_index].propertyFlags & properties) == properties)
+        {
+            break;
+        }
+    }
+
+    if (memory_type_index == _memory_properties.memoryTypeCount)
+    {
+        return false;
+    }
+
+    VkMemoryAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = memory_requirements.size;
+    alloc_info.memoryTypeIndex = memory_type_index;
+    VK_CHECK_RESULT(vkAllocateMemory(_device, &alloc_info, nullptr, &memory));
+    vkBindBufferMemory(_device, buffer, memory, 0);
+
+    return true;
 }
 
 void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores,

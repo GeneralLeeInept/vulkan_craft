@@ -1,11 +1,20 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
 #include "graphics_pipeline.h"
 #include "render_pass.h"
 #include "shader_cache.h"
 #include "vertex_buffer.h"
 #include "vulkan_device.h"
 #include "vulkan_swapchain.h"
+
+struct UBO
+{
+    glm::mat4x4 model;
+    glm::mat4x4 view;
+    glm::mat4x4 proj;
+};
 
 class Renderer
 {
@@ -15,6 +24,10 @@ public:
 
     bool set_window_size(uint32_t width, uint32_t height);
 
+    void set_model_matrix(glm::mat4x4& m) { _ubo_data.model = m; }
+    void set_view_matrix(glm::mat4x4& m) { _ubo_data.view = m; }
+    void set_proj_matrix(glm::mat4x4& m) { _ubo_data.proj = m; }
+
     bool draw_frame();
 
 private:
@@ -23,10 +36,12 @@ private:
     bool create_instance();
     bool create_device();
     bool create_semaphores();
-    bool create_command_pool();
     bool create_frame_buffers();
     bool create_graphics_pipeline();
     bool create_vertex_buffer();
+    bool create_descriptor_set_layout();
+    bool create_descriptor_set();
+    bool create_ubo();
 
     ShaderCache _shader_cache;
     VulkanDevice _device;
@@ -44,6 +59,13 @@ private:
     VkSemaphore _drawing_complete_semaphore = VK_NULL_HANDLE;
     VkShaderModule _vertex_shader = VK_NULL_HANDLE;
     VkShaderModule _fragment_shader = VK_NULL_HANDLE;
+
+    UBO _ubo_data;
+    VkBuffer _ubo = VK_NULL_HANDLE;
+    VkDeviceMemory _ubo_memory = VK_NULL_HANDLE;
+    VkDescriptorSetLayout _descriptor_set_layout = VK_NULL_HANDLE;
+    VkDescriptorPool _descriptor_pool = VK_NULL_HANDLE;
+    VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
 
     bool _valid_state = false;
 };

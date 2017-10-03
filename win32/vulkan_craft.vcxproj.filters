@@ -1,72 +1,72 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="deps">
-      <UniqueIdentifier>{e82d341c-36d4-4c75-9ec2-75fb358f2c3e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{ed5450d8-2f49-40c8-b78d-3420979baeb5}</UniqueIdentifier>
     </Filter>
     <Filter Include="shaders">
       <UniqueIdentifier>{8a1a30f7-6bc2-4074-a035-e998bf2d439d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="render">
+      <UniqueIdentifier>{7d542fff-654c-487e-85c9-13559ee8ed9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\vulkan_craft.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\renderer.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\vulkan_device.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\vulkan_swapchain.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\shader_cache.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\graphics_pipeline.cpp">
-      <Filter>src</Filter>
+      <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="..\src\render_pass.cpp">
-      <Filter>src</Filter>
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\renderer.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\shader_cache.cpp">
+      <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="..\src\vertex_buffer.cpp">
-      <Filter>src</Filter>
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulkan_device.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulkan_swapchain.cpp">
+      <Filter>render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\renderer.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\vulkan_device.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\vulkan.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\vulkan_swapchain.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\shader_cache.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\file.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\graphics_pipeline.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\render_pass.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\geometry.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\graphics_pipeline.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\renderer.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\render_pass.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\shader_cache.h">
+      <Filter>render</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\vertex_buffer.h">
-      <Filter>src</Filter>
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulkan.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulkan_device.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulkan_swapchain.h">
+      <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

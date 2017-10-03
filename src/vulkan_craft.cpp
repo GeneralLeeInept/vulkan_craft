@@ -2,6 +2,8 @@
 #include <stdlib.h>
 
 #include <GLFW/glfw3.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat4x4.hpp>
 
 #include "renderer.h"
 
@@ -45,6 +47,10 @@ void run_game(GLFWwindow* window)
     {
         glfwPollEvents();
 
+        _renderer.set_view_matrix(glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f - 3.0f * sinf(glm::radians(90.0f * (float)glfwGetTime()))), glm::vec3(),
+                                              glm::vec3(0.0f, 1.0f, 0.0f)));
+        _renderer.set_model_matrix(glm::rotate(glm::mat4x4(), glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f)));
+
         if (!_renderer.draw_frame())
         {
             glfwSetWindowShouldClose(window, true);
@@ -56,6 +62,8 @@ void run_game(GLFWwindow* window)
 
 void set_window_size(GLFWwindow* window, int width, int height)
 {
+    _renderer.set_proj_matrix(glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 10.0f));
+
     if (!_renderer.set_window_size((uint32_t)width, (uint32_t)height))
     {
         glfwSetWindowShouldClose(window, true);

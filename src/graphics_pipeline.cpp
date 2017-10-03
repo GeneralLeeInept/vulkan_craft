@@ -12,8 +12,7 @@ bool GraphicsPipeline::initialise(VulkanDevice& device, Swapchain& swapchain, Re
     _render_pass = &render_pass;
     _swapchain = &swapchain;
 
-    _layout_create_info = layout_create_info;
-    VK_CHECK_RESULT(vkCreatePipelineLayout((VkDevice)*_device, &_layout_create_info, nullptr, &_layout));
+    VK_CHECK_RESULT(vkCreatePipelineLayout((VkDevice)*_device, &layout_create_info, nullptr, &_layout));
 
     _shader_stages.resize(pipeline_create_info.stageCount);
     memcpy(_shader_stages.data(), pipeline_create_info.pStages, sizeof(_shader_stages[0]) * pipeline_create_info.stageCount);
@@ -184,6 +183,11 @@ void GraphicsPipelineFactory::set_vertex_decl(const VertexDecl& vertex_decl)
     create_input_state(vertex_decl, _vertex_bindings, _vertex_attributes);
 }
 
+void GraphicsPipelineFactory::add_descriptor_set_layout(VkDescriptorSetLayout layout)
+{
+    _descriptor_set_layouts.push_back(layout);
+}
+
 bool GraphicsPipelineFactory::create_pipeline(GraphicsPipeline& pipeline)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
@@ -236,6 +240,11 @@ bool GraphicsPipelineFactory::create_pipeline(GraphicsPipeline& pipeline)
 
     VkPipelineLayoutCreateInfo layout_create_info = {};
     layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    if (!_descriptor_set_layouts.empty())
+    {
+        layout_create_info.setLayoutCount = (uint32_t)_descriptor_set_layouts.size();
+        layout_create_info.pSetLayouts = _descriptor_set_layouts.data();
+    }
 
     VkGraphicsPipelineCreateInfo pipeline_create_info = {};
     pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
