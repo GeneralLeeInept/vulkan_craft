@@ -1,8 +1,16 @@
 #include "graphics_pipeline.h"
 
-bool GraphicsPipeline::initialise(VulkanDevice& device, VkGraphicsPipelineCreateInfo& pipeline_create_info, VkPipelineLayoutCreateInfo& layout_create_info)
+#include "render_pass.h"
+#include "vulkan.h"
+#include "vulkan_device.h"
+#include "vulkan_swapchain.h"
+
+bool GraphicsPipeline::initialise(VulkanDevice& device, Swapchain& swapchain, RenderPass& render_pass,
+                                  VkGraphicsPipelineCreateInfo& pipeline_create_info, VkPipelineLayoutCreateInfo& layout_create_info)
 {
     _device = &device;
+    _render_pass = &render_pass;
+    _swapchain = &swapchain;
 
     _layout_create_info = layout_create_info;
     VULKAN_CHECK_RESULT(vkCreatePipelineLayout((VkDevice)*_device, &_layout_create_info, nullptr, &_layout));
@@ -12,10 +20,10 @@ bool GraphicsPipeline::initialise(VulkanDevice& device, VkGraphicsPipelineCreate
     for (uint32_t stage = 0; stage < pipeline_create_info.stageCount; ++stage)
     {
         _shader_stages[stage] = pipeline_create_info.pStages[stage];
-        // TODO: deep copy 
+        // TODO: deep copy
     }
 
-    _vertex_input_state = *pipeline_create_info.pVertexInputState;  // TODO: deep copy
+    _vertex_input_state = *pipeline_create_info.pVertexInputState; // TODO: deep copy
     _input_assembly_state = *pipeline_create_info.pInputAssemblyState;
     _rasterisation_state = *pipeline_create_info.pRasterizationState;
     _multisample_state = *pipeline_create_info.pMultisampleState;
@@ -37,7 +45,7 @@ bool GraphicsPipeline::initialise(VulkanDevice& device, VkGraphicsPipelineCreate
     _pipeline_create_info.pInputAssemblyState = &_input_assembly_state;
     _pipeline_create_info.pRasterizationState = &_rasterisation_state;
     _pipeline_create_info.pMultisampleState = &_multisample_state;
-    _pipeline_create_info.pDepthStencilState = & _depth_stencil_state;
+    _pipeline_create_info.pDepthStencilState = &_depth_stencil_state;
     _pipeline_create_info.pColorBlendState = &_colour_blend_state;
 
     return true;
@@ -54,19 +62,19 @@ void GraphicsPipeline::destroy()
     }
 }
 
-bool GraphicsPipeline::create(VulkanSwapchain& swapchain, VkRenderPass render_pass)
+bool GraphicsPipeline::create()
 {
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)swapchain.get_extent().width;
-    viewport.height = (float)swapchain.get_extent().height;
+    viewport.width = (float)_swapchain->get_extent().width;
+    viewport.height = (float)_swapchain->get_extent().height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor = {};
     scissor.offset = { 0, 0 };
-    scissor.extent = swapchain.get_extent();
+    scissor.extent = _swapchain->get_extent();
 
     VkPipelineViewportStateCreateInfo viewport_state = {};
     viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -77,7 +85,7 @@ bool GraphicsPipeline::create(VulkanSwapchain& swapchain, VkRenderPass render_pa
 
     _pipeline_create_info.pViewportState = &viewport_state;
     _pipeline_create_info.layout = _layout;
-    _pipeline_create_info.renderPass = render_pass;
+    _pipeline_create_info.renderPass = (VkRenderPass)*_render_pass;
 
     VULKAN_CHECK_RESULT(vkCreateGraphicsPipelines((VkDevice)*_device, nullptr, 1, &_pipeline_create_info, nullptr, &_pipeline));
 

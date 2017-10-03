@@ -1,6 +1,9 @@
-#include "vulkan.h"
+#include "vulkan_swapchain.h"
 
-bool VulkanSwapchain::initialise(VulkanDevice& device)
+#include "vulkan.h"
+#include "vulkan_device.h"
+
+bool Swapchain::initialise(VulkanDevice& device)
 {
     _device = &device;
     VkSemaphoreCreateInfo create_info = {};
@@ -38,7 +41,7 @@ void choose_surface_format(const std::vector<VkSurfaceFormatKHR>& surface_format
     }
 }
 
-bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
+bool Swapchain::create(uint32_t* width, uint32_t* height, bool vsync)
 {
     VkSwapchainKHR old_swapchain = _swapchain;
 
@@ -95,8 +98,7 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
 
     VkCompositeAlphaFlagBitsKHR composite_alpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-    std::vector<VkCompositeAlphaFlagBitsKHR> composite_alpha_flags = 
-    {
+    std::vector<VkCompositeAlphaFlagBitsKHR> composite_alpha_flags = {
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
         VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
@@ -143,7 +145,7 @@ bool VulkanSwapchain::create(uint32_t* width, uint32_t* height, bool vsync)
     return true;
 }
 
-void VulkanSwapchain::destroy()
+void Swapchain::destroy()
 {
     if (_swapchain)
     {
@@ -156,13 +158,14 @@ void VulkanSwapchain::destroy()
     }
 }
 
-bool VulkanSwapchain::begin_frame()
+bool Swapchain::begin_frame()
 {
-    VULKAN_CHECK_RESULT(vkAcquireNextImageKHR((VkDevice)*_device, _swapchain, UINT64_MAX, _image_acquired_semaphore, nullptr, &_acquired_image_index));
+    VULKAN_CHECK_RESULT(
+            vkAcquireNextImageKHR((VkDevice)*_device, _swapchain, UINT64_MAX, _image_acquired_semaphore, nullptr, &_acquired_image_index));
     return true;
 }
 
-bool VulkanSwapchain::end_frame(uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores)
+bool Swapchain::end_frame(uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores)
 {
     VkPresentInfoKHR present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -176,7 +179,7 @@ bool VulkanSwapchain::end_frame(uint32_t wait_semaphore_count, VkSemaphore* wait
     return true;
 }
 
-bool VulkanSwapchain::get_images()
+bool Swapchain::get_images()
 {
     uint32_t image_count;
     VULKAN_CHECK_RESULT(vkGetSwapchainImagesKHR((VkDevice)*_device, _swapchain, &image_count, nullptr));
@@ -206,7 +209,7 @@ bool VulkanSwapchain::get_images()
     return true;
 }
 
-void VulkanSwapchain::cleanup_swapchain(VkSwapchainKHR swapchain)
+void Swapchain::cleanup_swapchain(VkSwapchainKHR swapchain)
 {
     for (VkImageView& image_view : _image_views)
     {

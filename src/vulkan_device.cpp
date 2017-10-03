@@ -1,3 +1,5 @@
+#include "vulkan_device.h"
+
 #include "vulkan.h"
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rhs)
@@ -149,8 +151,8 @@ VkResult VulkanDevice::create_command_pool(VkCommandPoolCreateFlags flags, VkCom
     return vkCreateCommandPool(_device, &create_info, nullptr, command_pool);
 }
 
-void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask, uint32_t signal_semaphore_count,
-                          VkSemaphore* signal_semaphores)
+void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores,
+                          const VkPipelineStageFlags* wait_stage_mask, uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores)
 {
     VkSubmitInfo submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

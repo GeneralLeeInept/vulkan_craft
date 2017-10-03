@@ -6,6 +6,8 @@
 #include <sstream>
 #include <vector>
 
+#include "vulkan.h"
+
 bool Renderer::initialise(GLFWwindow* window)
 {
     _window = window;
@@ -36,6 +38,11 @@ bool Renderer::initialise(GLFWwindow* window)
     }
 
     if (!_swapchain.initialise(_device))
+    {
+        return false;
+    }
+
+    if (!_render_pass.initialise(_device, _swapchain))
     {
         return false;
     }
@@ -108,12 +115,12 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
         return false;
     }
 
-    if (!create_render_pass())
+    if (!_render_pass.create())
     {
         return false;
     }
 
-    if (!_graphics_pipeline.create(_swapchain, _render_pass))
+    if (!_graphics_pipeline.create())
     {
         return false;
     }
@@ -157,7 +164,7 @@ bool Renderer::draw_frame()
     VkClearValue clear_value = { 0.0f, 0.0f, 0.0f, 1.0f };
     VkRenderPassBeginInfo render_pass_begin_info = {};
     render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_begin_info.renderPass = _render_pass;
+    render_pass_begin_info.renderPass = (VkRenderPass)_render_pass;
     render_pass_begin_info.framebuffer = _frame_buffers[_swapchain.get_acquired_image_index()];
     render_pass_begin_info.renderArea.offset = { 0, 0 };
     render_pass_begin_info.renderArea.extent = _swapchain.get_extent();
@@ -174,7 +181,7 @@ bool Renderer::draw_frame()
     VkSemaphore image_acquired_semaphore = _swapchain.get_image_acquired_semaphore();
     VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     _device.submit(command_buffer, 1, &image_acquired_semaphore, &wait_stage_mask, 1, &_drawing_complete_semaphore);
-    
+
     if (!_swapchain.end_frame(1, &_drawing_complete_semaphore))
     {
         return false;
@@ -209,12 +216,7 @@ void Renderer::invalidate()
 
         _frame_buffers.clear();
         _graphics_pipeline.invalidate();
-
-        if (_render_pass)
-        {
-            vkDestroyRenderPass((VkDevice)_device, _render_pass, nullptr);
-            _render_pass = VK_NULL_HANDLE;
-        }
+        _render_pass.invalidate();
     }
 }
 
@@ -349,53 +351,11 @@ bool Renderer::create_command_pool()
     return true;
 }
 
-bool Renderer::create_render_pass()
-{
-    // Single pass forward-renderer
-    VkAttachmentDescription colour_buffer = {};
-    colour_buffer.format = _swapchain.get_image_format();
-    colour_buffer.samples = VK_SAMPLE_COUNT_1_BIT;
-    colour_buffer.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colour_buffer.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colour_buffer.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colour_buffer.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colour_buffer.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colour_buffer.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference colour_buffer_reference = {};
-    colour_buffer_reference.attachment = 0;
-    colour_buffer_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.inputAttachmentCount = 0;
-    subpass.pInputAttachments = nullptr;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colour_buffer_reference;
-    subpass.pResolveAttachments = nullptr;
-    subpass.pDepthStencilAttachment = nullptr;
-    subpass.preserveAttachmentCount = 0;
-    subpass.pPreserveAttachments = nullptr;
-
-    VkRenderPassCreateInfo create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    create_info.attachmentCount = 1;
-    create_info.pAttachments = &colour_buffer;
-    create_info.subpassCount = 1;
-    create_info.pSubpasses = &subpass;
-    create_info.dependencyCount = 0;
-    create_info.pDependencies = nullptr;
-
-    VULKAN_CHECK_RESULT(vkCreateRenderPass((VkDevice)_device, &create_info, nullptr, &_render_pass));
-
-    return true;
-}
-
 bool Renderer::create_frame_buffers()
 {
     VkFramebufferCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    create_info.renderPass = _render_pass;
+    create_info.renderPass = (VkRenderPass)_render_pass;
     create_info.attachmentCount = 1;
     create_info.width = _swapchain.get_extent().width;
     create_info.height = _swapchain.get_extent().height;
@@ -473,5 +433,5 @@ bool Renderer::create_graphics_pipeline()
     create_info.pDepthStencilState = &depth_stencil_state_create_info;
     create_info.pColorBlendState = &colour_blend_state_create_info;
 
-    return _graphics_pipeline.initialise(_device, create_info, pipeline_layout_create_info);
+    return _graphics_pipeline.initialise(_device, _swapchain, _render_pass, create_info, pipeline_layout_create_info);
 }

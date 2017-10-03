@@ -1,13 +1,16 @@
 #pragma once
 
+#include <vector>
 #include <vulkan/vulkan.h>
 
-class VulkanSwapchain
+class VulkanDevice;
+
+class Swapchain
 {
 public:
     bool initialise(VulkanDevice& device);
 
-    bool create(uint32_t *width, uint32_t *height, bool vsync);
+    bool create(uint32_t* width, uint32_t* height, bool vsync);
     void destroy();
 
     VkFormat get_image_format() const { return _image_format; }

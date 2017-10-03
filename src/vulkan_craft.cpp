@@ -61,4 +61,3 @@ void set_window_size(GLFWwindow* window, int width, int height)
         glfwSetWindowShouldClose(window, true);
     }
 }
-

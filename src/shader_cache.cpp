@@ -7,7 +7,7 @@
 static VkShaderModule do_load(VkDevice device, const char* path)
 {
     File fp;
-    
+
     if (!fp.open(path, "rb"))
     {
         return VK_NULL_HANDLE;
@@ -59,7 +59,7 @@ VkShaderModule ShaderCache::load(const char* path)
         shader = do_load(_device, path);
         _cache[path] = shader;
     }
-    
+
     if (shader)
     {
         _ref_counts[shader]++;
