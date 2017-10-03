@@ -3,6 +3,7 @@
 #include "graphics_pipeline.h"
 #include "render_pass.h"
 #include "shader_cache.h"
+#include "vertex_buffer.h"
 #include "vulkan_device.h"
 #include "vulkan_swapchain.h"
 
@@ -32,6 +33,7 @@ private:
     Swapchain _swapchain;
     RenderPass _render_pass;
     GraphicsPipeline _graphics_pipeline;
+    VertexBuffer _vertex_buffer;
     std::vector<VkFramebuffer> _frame_buffers;
     GLFWwindow* _window = nullptr;
     VkInstance _vulkan_instance = VK_NULL_HANDLE;
@@ -41,9 +43,6 @@ private:
     VkSemaphore _drawing_complete_semaphore = VK_NULL_HANDLE;
     VkShaderModule _vertex_shader = VK_NULL_HANDLE;
     VkShaderModule _fragment_shader = VK_NULL_HANDLE;
-
-    VkBuffer _vertex_buffer;
-    VkDeviceMemory _vertex_buffer_memory;
 
     bool _valid_state = false;
 };

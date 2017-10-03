@@ -75,18 +75,8 @@ void Renderer::shutdown()
 {
     invalidate();
 
-    if (_vertex_buffer)
-    {
-        vkDestroyBuffer((VkDevice)_device, _vertex_buffer, nullptr);
-    }
-
-    if (_vertex_buffer_memory)
-    {
-        vkFreeMemory((VkDevice)_device, _vertex_buffer_memory, nullptr);
-    }
-
+    _vertex_buffer.destroy();
     _graphics_pipeline.destroy();
-
     _swapchain.destroy();
 
     if (_command_pool)
@@ -189,8 +179,9 @@ bool Renderer::draw_frame()
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)_graphics_pipeline);
+    VkBuffer vertex_buffer = (VkBuffer)_vertex_buffer;
     VkDeviceSize offsets = 0;
-    vkCmdBindVertexBuffers(command_buffer, 0, 1, &_vertex_buffer, &offsets);
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, &offsets);
     vkCmdDraw(command_buffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(command_buffer);
 
@@ -479,44 +470,23 @@ bool Renderer::create_vertex_buffer()
                                      { { 0.5f, 0.375f }, { 0.0f, 1.0f, 0.0f } },
                                      { { -0.5f, 0.375f }, { 0.0f, 0.0f, 1.0f } } };
 
-    static uint32_t vertex_data_size = (uint32_t)sizeof(vertex_data);
+    static VertexDecl decl = { { 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec2) },
+                               { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) } };
 
-    VkBufferCreateInfo buffer_create_info = {};
-    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_create_info.size = vertex_data_size;
-    buffer_create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    VK_CHECK_RESULT(vkCreateBuffer((VkDevice)_device, &buffer_create_info, nullptr, &_vertex_buffer));
-
-    const VkPhysicalDeviceMemoryProperties& memory_properties = _device.get_memory_properties();
-    uint32_t memory_type_index;
-    VkMemoryPropertyFlags desired_properties =
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    for (memory_type_index = 0; memory_type_index < memory_properties.memoryTypeCount; ++memory_type_index)
-    {
-        if ((memory_properties.memoryTypes[memory_type_index].propertyFlags & desired_properties) == desired_properties)
-        {
-            break;
-        }
-    }
-
-    if (memory_type_index == memory_properties.memoryTypeCount)
+    if (!_vertex_buffer.create(_device, decl, 3))
     {
         return false;
     }
 
-    VkMemoryAllocateInfo allocate_info = {};
-    allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocate_info.allocationSize = vertex_data_size;
-    allocate_info.memoryTypeIndex = memory_type_index;
-    VK_CHECK_RESULT(vkAllocateMemory((VkDevice)_device, &allocate_info, nullptr, &_vertex_buffer_memory));
-
-    VK_CHECK_RESULT(vkBindBufferMemory((VkDevice)_device, _vertex_buffer, _vertex_buffer_memory, 0));
-
     void* mapped_memory;
-    VK_CHECK_RESULT(vkMapMemory((VkDevice)_device, _vertex_buffer_memory, 0, vertex_data_size, 0, &mapped_memory));
-    memcpy(mapped_memory, vertex_data, vertex_data_size);
-    vkUnmapMemory((VkDevice)_device, _vertex_buffer_memory);
+
+    if (!_vertex_buffer.map(&mapped_memory))
+    {
+        return false;
+    }
+
+    memcpy(mapped_memory, vertex_data, sizeof(vertex_data));
+    _vertex_buffer.unmap();
 
     return true;
 }

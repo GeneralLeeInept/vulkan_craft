@@ -67,6 +67,7 @@
     <ClCompile Include="..\src\renderer.cpp" />
     <ClCompile Include="..\src\render_pass.cpp" />
     <ClCompile Include="..\src\shader_cache.cpp" />
+    <ClCompile Include="..\src\vertex_buffer.cpp" />
     <ClCompile Include="..\src\vulkan_craft.cpp" />
     <ClCompile Include="..\src\vulkan_device.cpp" />
     <ClCompile Include="..\src\vulkan_swapchain.cpp" />
@@ -83,6 +84,7 @@
     <ClInclude Include="..\src\renderer.h" />
     <ClInclude Include="..\src\render_pass.h" />
     <ClInclude Include="..\src\shader_cache.h" />
+    <ClInclude Include="..\src\vertex_buffer.h" />
     <ClInclude Include="..\src\vulkan.h" />
     <ClInclude Include="..\src\vulkan_device.h" />
     <ClInclude Include="..\src\vulkan_swapchain.h" />
