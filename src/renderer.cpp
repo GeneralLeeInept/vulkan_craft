@@ -95,16 +95,7 @@ void Renderer::shutdown()
 {
     invalidate();
 
-    if (_ubo)
-    {
-        vkDestroyBuffer((VkDevice)_device, _ubo, nullptr);
-    }
-
-    if (_ubo_memory)
-    {
-        vkFreeMemory((VkDevice)_device, _ubo_memory, nullptr);
-    }
-
+    _ubo_buffer.destroy();
     _graphics_pipeline.destroy();
 
     if (_descriptor_pool)
@@ -195,9 +186,12 @@ bool Renderer::draw_frame()
     }
 
     void* data;
-    VK_CHECK_RESULT(vkMapMemory((VkDevice)_device, _ubo_memory, 0, sizeof(UBO), 0, &data));
+    if (!_ubo_buffer.map(&data))
+    {
+        return false;
+    }
     memcpy(data, &_ubo_data, sizeof(UBO));
-    vkUnmapMemory((VkDevice)_device, _ubo_memory);
+    _ubo_buffer.unmap();
 
     VkCommandBufferAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -503,10 +497,7 @@ bool Renderer::create_descriptor_set()
 
     VK_CHECK_RESULT(vkAllocateDescriptorSets((VkDevice)_device, &alloc_info, &_descriptor_set));
 
-    VkDescriptorBufferInfo buffer_info = {};
-    buffer_info.buffer = _ubo;
-    buffer_info.offset = 0;
-    buffer_info.range = sizeof(UBO);
+    VkDescriptorBufferInfo buffer_info = _ubo_buffer.get_descriptor_info();
 
     VkWriteDescriptorSet write = {};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -524,6 +515,6 @@ bool Renderer::create_descriptor_set()
 
 bool Renderer::create_ubo()
 {
-    return _device.create_buffer(sizeof(UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, _ubo, _ubo_memory);
+    return _ubo_buffer.create(_device, sizeof(UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 }

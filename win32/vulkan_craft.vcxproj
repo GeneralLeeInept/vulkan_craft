@@ -25,6 +25,8 @@
     <OutDir>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)\</OutDir>
     <IntDir>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
+    <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -32,7 +34,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\deps\glfw-3.2.1\include;$(VULKAN_SDK)\Include;..\deps\glm-0.9.8.5;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\deps\glfw-3.2.1\include;$(VULKAN_SDK)\Include;..\deps\glm-0.9.8.5;..\deps\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -67,7 +69,9 @@
     <ClCompile Include="..\src\renderer.cpp" />
     <ClCompile Include="..\src\render_pass.cpp" />
     <ClCompile Include="..\src\shader_cache.cpp" />
+    <ClCompile Include="..\src\texture_cache.cpp" />
     <ClCompile Include="..\src\vertex_buffer.cpp" />
+    <ClCompile Include="..\src\vulkan_buffer.cpp" />
     <ClCompile Include="..\src\vulkan_craft.cpp" />
     <ClCompile Include="..\src\vulkan_device.cpp" />
     <ClCompile Include="..\src\vulkan_swapchain.cpp" />
@@ -84,8 +88,10 @@
     <ClInclude Include="..\src\renderer.h" />
     <ClInclude Include="..\src\render_pass.h" />
     <ClInclude Include="..\src\shader_cache.h" />
+    <ClInclude Include="..\src\texture_cache.h" />
     <ClInclude Include="..\src\vertex_buffer.h" />
     <ClInclude Include="..\src\vulkan.h" />
+    <ClInclude Include="..\src\vulkan_buffer.h" />
     <ClInclude Include="..\src\vulkan_device.h" />
     <ClInclude Include="..\src\vulkan_swapchain.h" />
   </ItemGroup>

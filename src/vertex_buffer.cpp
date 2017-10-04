@@ -23,7 +23,7 @@ bool VertexBuffer::create(VulkanDevice& device, const VertexDecl& decl, uint32_t
     _memory_size = get_vertex_size(decl) * count;
 
     if (!device.create_buffer(_memory_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                               _vertex_buffer, _device_memory))
     {
         return false;

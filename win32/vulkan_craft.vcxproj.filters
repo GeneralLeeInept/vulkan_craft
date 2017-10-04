@@ -36,12 +36,15 @@
     <ClCompile Include="..\src\vulkan_swapchain.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\vulkan_buffer.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\texture_cache.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\geometry.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\graphics_pipeline.h">
@@ -66,6 +69,15 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="..\src\vulkan_swapchain.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\geometry.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulkan_buffer.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\texture_cache.h">
       <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>

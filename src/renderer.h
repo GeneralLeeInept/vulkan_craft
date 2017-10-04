@@ -6,6 +6,7 @@
 #include "render_pass.h"
 #include "shader_cache.h"
 #include "vertex_buffer.h"
+#include "vulkan_buffer.h"
 #include "vulkan_device.h"
 #include "vulkan_swapchain.h"
 
@@ -49,6 +50,7 @@ private:
     RenderPass _render_pass;
     GraphicsPipelineFactory _graphics_pipeline_factory;
     GraphicsPipeline _graphics_pipeline;
+    VulkanBuffer _ubo_buffer;
     VertexBuffer _vertex_buffer;
     std::vector<VkFramebuffer> _frame_buffers;
     GLFWwindow* _window = nullptr;
@@ -61,8 +63,6 @@ private:
     VkShaderModule _fragment_shader = VK_NULL_HANDLE;
 
     UBO _ubo_data;
-    VkBuffer _ubo = VK_NULL_HANDLE;
-    VkDeviceMemory _ubo_memory = VK_NULL_HANDLE;
     VkDescriptorSetLayout _descriptor_set_layout = VK_NULL_HANDLE;
     VkDescriptorPool _descriptor_pool = VK_NULL_HANDLE;
     VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
