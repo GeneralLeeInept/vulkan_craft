@@ -33,8 +33,9 @@ public:
     uint32_t find_queue_family_index(VkQueueFlags flags) const;
 
     bool create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool);
-    bool create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-                           VkDeviceMemory& memory);
+    bool create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& memory);
+
+    bool allocate_memory(VkMemoryPropertyFlags properties, VkMemoryRequirements requirements, VkDeviceMemory& memory, VkDeviceSize& offset);
 
     void submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask,
                 uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores);

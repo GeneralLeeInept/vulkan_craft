@@ -43,7 +43,12 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_render_pass.initialise(_device, _swapchain))
+    if (!_depth_buffer.initialise(_device, _swapchain))
+    {
+        return false;
+    }
+
+    if (!_render_pass.initialise(_device, _swapchain, &_depth_buffer))
     {
         return false;
     }
@@ -110,6 +115,7 @@ void Renderer::shutdown()
 
     _index_buffer.destroy();
     _vertex_buffer.destroy();
+    _depth_buffer.destroy();
     _swapchain.destroy();
 
     if (_command_pool)
@@ -150,6 +156,11 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
     invalidate();
 
     if (!_swapchain.create(&width, &height, true))
+    {
+        return false;
+    }
+
+    if (!_depth_buffer.create())
     {
         return false;
     }
@@ -208,15 +219,17 @@ bool Renderer::draw_frame()
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     VK_CHECK_RESULT(vkBeginCommandBuffer(command_buffer, &begin_info));
 
-    VkClearValue clear_value = { 0.0f, 0.0f, 0.0f, 1.0f };
+    VkClearValue clear_values[2];
+    clear_values[0] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    clear_values[1] = { 1.0f, 0 };
     VkRenderPassBeginInfo render_pass_begin_info = {};
     render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_begin_info.renderPass = (VkRenderPass)_render_pass;
     render_pass_begin_info.framebuffer = _frame_buffers[_swapchain.get_acquired_image_index()];
     render_pass_begin_info.renderArea.offset = { 0, 0 };
     render_pass_begin_info.renderArea.extent = _swapchain.get_extent();
-    render_pass_begin_info.clearValueCount = 1;
-    render_pass_begin_info.pClearValues = &clear_value;
+    render_pass_begin_info.clearValueCount = 2;
+    render_pass_begin_info.pClearValues = clear_values;
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)_graphics_pipeline);
@@ -275,6 +288,7 @@ void Renderer::invalidate()
         _frame_buffers.clear();
         _graphics_pipeline.invalidate();
         _render_pass.invalidate();
+        _depth_buffer.invalidate();
     }
 }
 
@@ -408,14 +422,15 @@ bool Renderer::create_frame_buffers()
     VkFramebufferCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     create_info.renderPass = (VkRenderPass)_render_pass;
-    create_info.attachmentCount = 1;
+    create_info.attachmentCount = 2;
     create_info.width = _swapchain.get_extent().width;
     create_info.height = _swapchain.get_extent().height;
     create_info.layers = 1;
 
     for (VkImageView image_view : _swapchain.get_image_views())
     {
-        create_info.pAttachments = &image_view;
+        VkImageView attachments[2] =  { image_view, _depth_buffer.get_image_view() };
+        create_info.pAttachments = attachments;
 
         VkFramebuffer frame_buffer;
         VK_CHECK_RESULT(vkCreateFramebuffer((VkDevice)_device, &create_info, nullptr, &frame_buffer));

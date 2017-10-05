@@ -2,13 +2,14 @@
 
 #include <vulkan/vulkan.h>
 
-class VulkanDevice;
+class DepthBuffer;
 class Swapchain;
+class VulkanDevice;
 
 class RenderPass
 {
 public:
-    bool initialise(VulkanDevice& device, Swapchain& swapchain);
+    bool initialise(VulkanDevice& device, Swapchain& swapchain, DepthBuffer* depth_buffer);
     void destroy();
 
     bool create();
@@ -17,7 +18,8 @@ public:
     explicit operator VkRenderPass() { return _render_pass; }
 
 private:
-    VulkanDevice* _device;
-    Swapchain* _swapchain;
+    VulkanDevice* _device = nullptr;
+    Swapchain* _swapchain = nullptr;
+    DepthBuffer* _depth_buffer = nullptr;
     VkRenderPass _render_pass = VK_NULL_HANDLE;
 };

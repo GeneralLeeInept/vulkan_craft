@@ -70,6 +70,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\depth_buffer.cpp" />
     <ClCompile Include="..\src\graphics_pipeline.cpp" />
     <ClCompile Include="..\src\renderer.cpp" />
     <ClCompile Include="..\src\render_pass.cpp" />
@@ -79,6 +80,7 @@
     <ClCompile Include="..\src\vulkan_buffer.cpp" />
     <ClCompile Include="..\src\vulkan_craft.cpp" />
     <ClCompile Include="..\src\vulkan_device.cpp" />
+    <ClCompile Include="..\src\vulkan_image.cpp" />
     <ClCompile Include="..\src\vulkan_swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -87,6 +89,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\depth_buffer.h" />
     <ClInclude Include="..\src\file.h" />
     <ClInclude Include="..\src\geometry.h" />
     <ClInclude Include="..\src\graphics_pipeline.h" />
@@ -98,6 +101,7 @@
     <ClInclude Include="..\src\vulkan.h" />
     <ClInclude Include="..\src\vulkan_buffer.h" />
     <ClInclude Include="..\src\vulkan_device.h" />
+    <ClInclude Include="..\src\vulkan_image.h" />
     <ClInclude Include="..\src\vulkan_swapchain.h" />
   </ItemGroup>
   <ItemGroup>

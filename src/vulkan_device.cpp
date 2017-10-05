@@ -171,10 +171,24 @@ bool VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, Vk
     VkMemoryRequirements memory_requirements;
     vkGetBufferMemoryRequirements(_device, buffer, &memory_requirements);
 
+    VkDeviceSize offset;
+
+    if (!allocate_memory(properties, memory_requirements, memory, offset))
+    {
+        return false;
+    }
+
+    VK_CHECK_RESULT(vkBindBufferMemory(_device, buffer, memory, offset));
+
+    return true;
+}
+
+bool VulkanDevice::allocate_memory(VkMemoryPropertyFlags properties, VkMemoryRequirements requirements, VkDeviceMemory& memory, VkDeviceSize& offset)
+{
     uint32_t memory_type_index;
     for (memory_type_index = 0; memory_type_index < _memory_properties.memoryTypeCount; ++memory_type_index)
     {
-        if ((memory_requirements.memoryTypeBits & (1 << memory_type_index)) == 0)
+        if ((requirements.memoryTypeBits & (1 << memory_type_index)) == 0)
         {
             continue;
         }
@@ -192,10 +206,11 @@ bool VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, Vk
 
     VkMemoryAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.allocationSize = memory_requirements.size;
+    alloc_info.allocationSize = requirements.size;
     alloc_info.memoryTypeIndex = memory_type_index;
     VK_CHECK_RESULT(vkAllocateMemory(_device, &alloc_info, nullptr, &memory));
-    vkBindBufferMemory(_device, buffer, memory, 0);
+
+    offset = 0;
 
     return true;
 }

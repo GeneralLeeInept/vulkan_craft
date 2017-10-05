@@ -50,9 +50,14 @@ void run_game(GLFWwindow* window)
     {
         glfwPollEvents();
 
-        _renderer.set_view_matrix(glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f - 3.0f * sinf(glm::radians(90.0f * (float)glfwGetTime()))), glm::vec3(),
+        _renderer.set_view_matrix(glm::lookAt(glm::vec3(0.0f, 0.0f, 6.0f - 3.0f * sinf(glm::radians(90.0f * (float)glfwGetTime()))), glm::vec3(),
                                               glm::vec3(0.0f, 1.0f, 0.0f)));
-        _renderer.set_model_matrix(glm::rotate(glm::mat4x4(), glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f)));
+
+        glm::mat4x4 model;
+        model = glm::rotate(model, glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
+        _renderer.set_model_matrix(model);
 
         if (!_renderer.draw_frame())
         {
@@ -65,7 +70,7 @@ void run_game(GLFWwindow* window)
 
 void set_window_size(GLFWwindow* window, int width, int height)
 {
-    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 10.0f);
+    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 1.0f, 100.0f);
     proj[1] *= -1.0f;
     _renderer.set_proj_matrix(proj);
 

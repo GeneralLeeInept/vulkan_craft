@@ -2,6 +2,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include "depth_buffer.h"
 #include "graphics_pipeline.h"
 #include "render_pass.h"
 #include "shader_cache.h"
@@ -47,6 +48,7 @@ private:
     ShaderCache _shader_cache;
     VulkanDevice _device;
     Swapchain _swapchain;
+    DepthBuffer _depth_buffer;
     RenderPass _render_pass;
     GraphicsPipelineFactory _graphics_pipeline_factory;
     GraphicsPipeline _graphics_pipeline;

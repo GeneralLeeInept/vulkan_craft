@@ -45,6 +45,12 @@
     <ClCompile Include="..\src\texture_cache.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\vulkan_image.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\depth_buffer.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.h">
@@ -81,6 +87,12 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="..\src\texture_cache.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulkan_image.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\depth_buffer.h">
       <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>
