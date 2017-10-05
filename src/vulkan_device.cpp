@@ -1,5 +1,6 @@
 #include "vulkan_device.h"
 
+#include "texture_cache.h"
 #include "vulkan.h"
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rhs)
@@ -86,11 +87,22 @@ bool VulkanDevice::create()
 
     vkGetDeviceQueue(_device, queue_create_info.queueFamilyIndex, 0, &_graphics_queue);
 
+    if (!create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, _copy_command_pool))
+    {
+        return false;
+    }
+
     return true;
 }
 
 void VulkanDevice::destroy()
 {
+    if (_copy_command_pool)
+    {
+        vkDestroyCommandPool(_device, _copy_command_pool, nullptr);
+        _copy_command_pool = VK_NULL_HANDLE;
+    }
+
     if (_device)
     {
         vkDestroyDevice(_device, nullptr);
@@ -148,18 +160,18 @@ uint32_t VulkanDevice::find_queue_family_index(VkQueueFlags flags) const
     return valid;
 }
 
-bool VulkanDevice::create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool)
+bool VulkanDevice::create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool& command_pool)
 {
     VkCommandPoolCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     create_info.flags = flags;
     create_info.queueFamilyIndex = _graphics_queue_index;
-    VK_CHECK_RESULT(vkCreateCommandPool(_device, &create_info, nullptr, command_pool));
+    VK_CHECK_RESULT(vkCreateCommandPool(_device, &create_info, nullptr, &command_pool));
     return true;
 }
 
 bool VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-                                     VkDeviceMemory& memory)
+                                 VkDeviceMemory& memory)
 {
     VkBufferCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -228,4 +240,86 @@ void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count,
     submit_info.signalSemaphoreCount = signal_semaphore_count;
     submit_info.pSignalSemaphores = signal_semaphores;
     vkQueueSubmit(_graphics_queue, 1, &submit_info, nullptr);
+}
+
+VkCommandBuffer VulkanDevice::begin_one_time_commands()
+{
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.commandPool = _copy_command_pool;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandBufferCount = 1;
+
+    VkCommandBuffer command_buffer;
+    if (vkAllocateCommandBuffers((VkDevice)_device, &alloc_info, &command_buffer) != VK_SUCCESS)
+    {
+        return VK_NULL_HANDLE;
+    }
+
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
+    {
+        return VK_NULL_HANDLE;
+    }
+
+    return command_buffer;
+}
+
+bool VulkanDevice::upload_texture(Texture& texture)
+{
+    VkCommandBuffer command_buffer = begin_one_time_commands();
+
+    if (command_buffer == VK_NULL_HANDLE)
+    {
+        return false;
+    }
+
+    VkImageMemoryBarrier to_transition_dst = {};
+    to_transition_dst.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    to_transition_dst.srcAccessMask = 0;
+    to_transition_dst.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    to_transition_dst.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    to_transition_dst.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    to_transition_dst.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.image = texture._image;
+    to_transition_dst.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    to_transition_dst.subresourceRange.baseMipLevel = 0;
+    to_transition_dst.subresourceRange.levelCount = 1;
+    to_transition_dst.subresourceRange.baseArrayLayer = 0;
+    to_transition_dst.subresourceRange.layerCount = 1;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transition_dst);
+
+    VkBufferImageCopy region = {};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent = texture._image.get_extent();
+    vkCmdCopyBufferToImage(command_buffer, (VkBuffer)texture._staging_buffer, (VkImage)texture._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    VkImageMemoryBarrier to_shader = {};
+    to_transition_dst.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    to_transition_dst.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    to_transition_dst.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    to_transition_dst.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    to_transition_dst.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    to_transition_dst.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.image = texture._image;
+    to_transition_dst.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    to_transition_dst.subresourceRange.baseMipLevel = 0;
+    to_transition_dst.subresourceRange.levelCount = 1;
+    to_transition_dst.subresourceRange.baseArrayLayer = 0;
+    to_transition_dst.subresourceRange.layerCount = 1;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transition_dst);
+
+    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr);
+
+    return true;
 }

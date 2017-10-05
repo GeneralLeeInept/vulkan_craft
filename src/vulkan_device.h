@@ -3,6 +3,8 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+class Texture;
+
 class VulkanDevice
 {
 public:
@@ -32,13 +34,16 @@ public:
 
     uint32_t find_queue_family_index(VkQueueFlags flags) const;
 
-    bool create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool* command_pool);
+    bool create_command_pool(VkCommandPoolCreateFlags flags, VkCommandPool& command_pool);
     bool create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& memory);
 
     bool allocate_memory(VkMemoryPropertyFlags properties, VkMemoryRequirements requirements, VkDeviceMemory& memory, VkDeviceSize& offset);
 
     void submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask,
                 uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores);
+
+    VkCommandBuffer begin_one_time_commands();
+    bool upload_texture(Texture& texture);
 
 private:
     std::vector<VkQueueFamilyProperties> _queue_family_properties;
@@ -52,4 +57,5 @@ private:
     VkDevice _device = VK_NULL_HANDLE;
     VkQueue _graphics_queue = VK_NULL_HANDLE;
     uint32_t _graphics_queue_index = UINT32_MAX;
+    VkCommandPool _copy_command_pool = VK_NULL_HANDLE;
 };

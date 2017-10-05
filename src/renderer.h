@@ -6,6 +6,7 @@
 #include "graphics_pipeline.h"
 #include "render_pass.h"
 #include "shader_cache.h"
+#include "texture_cache.h"
 #include "vertex_buffer.h"
 #include "vulkan_buffer.h"
 #include "vulkan_device.h"
@@ -69,6 +70,8 @@ private:
     VkDescriptorSetLayout _descriptor_set_layout = VK_NULL_HANDLE;
     VkDescriptorPool _descriptor_pool = VK_NULL_HANDLE;
     VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
+
+    Texture _texture;
 
     bool _valid_state = false;
 };

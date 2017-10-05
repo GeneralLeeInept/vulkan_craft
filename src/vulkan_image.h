@@ -13,6 +13,8 @@ public:
 
     operator VkImage() const { return _image; }
 
+    VkExtent3D get_extent() const { return _extent; }
+
     bool create_view(VkImageViewType viewType, VkImageAspectFlags aspect_mask, uint32_t base_mip_level, uint32_t level_count,
                      uint32_t base_array_layer, uint32_t layer_count, VkImageView& view);
 

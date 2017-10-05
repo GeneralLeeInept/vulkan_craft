@@ -4,6 +4,27 @@
 #include <stdint.h>
 #include <vector>
 
+#include <vulkan/vulkan.h>
+
+#include "vulkan_buffer.h"
+#include "vulkan_image.h"
+
+class VulkanDevice;
+
+class Texture
+{
+public:
+    bool create(VulkanDevice& device, const char* path);
+    void destroy();
+
+public:
+    VulkanBuffer _staging_buffer;
+    VulkanImage _image;
+    VulkanDevice* _device = nullptr;
+    VkImageView _image_view = VK_NULL_HANDLE;
+    VkSampler _sampler = VK_NULL_HANDLE;
+};
+
 class TextureCache
 {
 public:

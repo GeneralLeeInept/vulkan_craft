@@ -33,7 +33,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, &_command_pool))
+    if (!_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, _command_pool))
     {
         return false;
     }
@@ -91,6 +91,11 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    if (!_texture.create(_device, "res/textures/dirt.png"))
+    {
+        return false;
+    }
+
     _valid_state = true;
 
     return true;
@@ -100,6 +105,7 @@ void Renderer::shutdown()
 {
     invalidate();
 
+    _texture.destroy();
     _ubo_buffer.destroy();
     _graphics_pipeline.destroy();
 
