@@ -11,6 +11,6 @@ bool TextureCache::initialise()
 
 bool TextureCache::load(const char* path)
 {
-
+    return true;
 }
 

@@ -12,6 +12,9 @@ void set_window_size(GLFWwindow* window, int width, int height);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
+    wchar_t cwd[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, cwd);
+
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -62,7 +65,9 @@ void run_game(GLFWwindow* window)
 
 void set_window_size(GLFWwindow* window, int width, int height)
 {
-    _renderer.set_proj_matrix(glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 10.0f));
+    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 10.0f);
+    proj[1] *= -1.0f;
+    _renderer.set_proj_matrix(proj);
 
     if (!_renderer.set_window_size((uint32_t)width, (uint32_t)height))
     {

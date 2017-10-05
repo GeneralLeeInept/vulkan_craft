@@ -13,25 +13,26 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>vulkan_craft</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup>
+  <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <OutDir>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
-    <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <LocalDebuggerWorkingDirectory>$(SolutionDir)_builds\$(ProjectName)\$(Configuration)\$(Platform)</LocalDebuggerWorkingDirectory>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>..\deps\glfw-3.2.1\include;$(VULKAN_SDK)\Include;..\deps\glm-0.9.8.5;..\deps\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -45,6 +46,10 @@
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Message>Copying textures</Message>
+      <Command>robocopy ..\res\textures $(TargetDir)res\textures /MIR || if %errorlevel% NEQ 1 exit /b %errorlevel%</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -98,16 +103,16 @@
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\triangle.frag">
       <FileType>Document</FileType>
-      <Command>$(VK_SDK_PATH)\bin\glslangValidator.exe -V %(Identity) -o $(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Command>
+      <Command>$(VK_SDK_PATH)\bin\glslangValidator.exe -V %(Identity) -o $(TargetDir)res\shaders\%(Filename)%(Extension).spv</Command>
       <Message>Compiling SPIR-V</Message>
-      <Outputs>$(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Outputs>
+      <Outputs>$(TargetDir)res\shaders\%(Filename)%(Extension).spv</Outputs>
       <LinkObjects>false</LinkObjects>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\triangle.vert">
       <FileType>Document</FileType>
-      <Command>$(VK_SDK_PATH)\bin\glslangValidator.exe -V %(Identity) -o $(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Command>
+      <Command>$(VK_SDK_PATH)\bin\glslangValidator.exe -V %(Identity) -o $(TargetDir)res\shaders\%(Filename)%(Extension).spv</Command>
       <Message>Compiling SPIR-V</Message>
-      <Outputs>$(TargetDir)..\res\shaders\%(Filename)%(Extension).spv</Outputs>
+      <Outputs>$(TargetDir)res\shaders\%(Filename)%(Extension).spv</Outputs>
       <LinkObjects>false</LinkObjects>
     </CustomBuild>
   </ItemGroup>

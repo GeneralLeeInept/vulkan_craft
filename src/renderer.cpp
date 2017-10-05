@@ -50,8 +50,8 @@ bool Renderer::initialise(GLFWwindow* window)
 
     _graphics_pipeline_factory.initialise(_device, _swapchain, _render_pass, 0);
 
-    _vertex_shader = _shader_cache.load("..\\res\\shaders\\triangle.vert.spv");
-    _fragment_shader = _shader_cache.load("..\\res\\shaders\\triangle.frag.spv");
+    _vertex_shader = _shader_cache.load("res/shaders/triangle.vert.spv");
+    _fragment_shader = _shader_cache.load("res/shaders/triangle.frag.spv");
 
     if (!_vertex_shader && !_fragment_shader)
     {
@@ -108,6 +108,7 @@ void Renderer::shutdown()
         vkDestroyDescriptorSetLayout((VkDevice)_device, _descriptor_set_layout, nullptr);
     }
 
+    _index_buffer.destroy();
     _vertex_buffer.destroy();
     _swapchain.destroy();
 
@@ -227,7 +228,9 @@ bool Renderer::draw_frame()
     VkDeviceSize offsets = 0;
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, &offsets);
 
-    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+    vkCmdBindIndexBuffer(command_buffer, (VkBuffer)_index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdDrawIndexed(command_buffer, 36, 1, 0, 0, 0);
 
     vkCmdEndRenderPass(command_buffer);
 
@@ -429,11 +432,12 @@ bool Renderer::create_graphics_pipeline()
 
 bool Renderer::create_vertex_buffer()
 {
-    static Vertex vertex_data[3] = { { { 0.0f, -0.375f }, { 1.0f, 0.0f, 0.0f } },
-                                     { { 0.5f, 0.375f }, { 0.0f, 1.0f, 0.0f } },
-                                     { { -0.5f, 0.375f }, { 0.0f, 0.0f, 1.0f } } };
+    static Vertex vertex_data[8] = { { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f } },    { { 0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
+                                     { { -0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f } },  { { -0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } },
+                                     { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f } },   { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f } },
+                                     { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f } }, { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } } };
 
-    static VertexDecl decl = { { 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec2) },
+    static VertexDecl decl = { { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) },
                                { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour), sizeof(glm::vec3) } };
 
     _graphics_pipeline_factory.set_vertex_decl(decl);
@@ -452,6 +456,63 @@ bool Renderer::create_vertex_buffer()
 
     memcpy(mapped_memory, vertex_data, sizeof(vertex_data));
     _vertex_buffer.unmap();
+
+    static uint16_t index_data[36];
+    index_data[0] = 0;
+    index_data[1] = 1;
+    index_data[2] = 2;
+    index_data[3] = 0;
+    index_data[4] = 2;
+    index_data[5] = 3;
+
+    index_data[6] = 4;
+    index_data[7] = 5;
+    index_data[8] = 6;
+    index_data[9] = 4;
+    index_data[10] = 6;
+    index_data[11] = 7;
+
+    index_data[12] = 4;
+    index_data[13] = 0;
+    index_data[14] = 3;
+    index_data[15] = 4;
+    index_data[16] = 3;
+    index_data[17] = 5;
+
+    index_data[18] = 7;
+    index_data[19] = 1;
+    index_data[20] = 0;
+    index_data[21] = 7;
+    index_data[22] = 0;
+    index_data[23] = 4;
+
+    index_data[24] = 2;
+    index_data[25] = 1;
+    index_data[26] = 7;
+    index_data[27] = 2;
+    index_data[28] = 7;
+    index_data[29] = 6;
+
+    index_data[30] = 3;
+    index_data[31] = 2;
+    index_data[32] = 6;
+    index_data[33] = 3;
+    index_data[34] = 6;
+    index_data[35] = 5;
+
+    if (!_index_buffer.create(_device, sizeof(index_data), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+    {
+        return false;
+    }
+
+    if (!_index_buffer.map(&mapped_memory))
+    {
+        return false;
+    }
+
+    memcpy(mapped_memory, index_data, sizeof(index_data));
+    _index_buffer.unmap();
 
     return true;
 }

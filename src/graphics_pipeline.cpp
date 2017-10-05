@@ -220,7 +220,8 @@ bool GraphicsPipelineFactory::create_pipeline(GraphicsPipeline& pipeline)
     VkPipelineRasterizationStateCreateInfo rasterization_state_create_info = {};
     rasterization_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterization_state_create_info.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization_state_create_info.cullMode = VK_CULL_MODE_NONE;
+    //rasterization_state_create_info.cullMode = VK_CULL_MODE_BACK_BIT;
+    //rasterization_state_create_info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterization_state_create_info.lineWidth = 1.0f;
 
     VkPipelineMultisampleStateCreateInfo multisample_state_create_info = {};

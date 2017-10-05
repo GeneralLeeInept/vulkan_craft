@@ -51,6 +51,7 @@ private:
     GraphicsPipelineFactory _graphics_pipeline_factory;
     GraphicsPipeline _graphics_pipeline;
     VulkanBuffer _ubo_buffer;
+    VulkanBuffer _index_buffer;
     VertexBuffer _vertex_buffer;
     std::vector<VkFramebuffer> _frame_buffers;
     GLFWwindow* _window = nullptr;
