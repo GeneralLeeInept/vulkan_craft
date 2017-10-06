@@ -70,9 +70,12 @@ void run_game(GLFWwindow* window)
 
 void set_window_size(GLFWwindow* window, int width, int height)
 {
-    glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 1.0f, 100.0f);
-    proj[1] *= -1.0f;
-    _renderer.set_proj_matrix(proj);
+    if (width && height)
+    {
+        glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 1.0f, 100.0f);
+        proj[1] *= -1.0f;
+        _renderer.set_proj_matrix(proj);
+    }
 
     if (!_renderer.set_window_size((uint32_t)width, (uint32_t)height))
     {

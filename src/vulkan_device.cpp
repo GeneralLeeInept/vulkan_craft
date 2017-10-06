@@ -319,6 +319,8 @@ bool VulkanDevice::upload_texture(Texture& texture)
     to_transition_dst.subresourceRange.layerCount = 1;
     vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transition_dst);
 
+    VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
+
     submit(command_buffer, 0, nullptr, nullptr, 0, nullptr);
 
     return true;

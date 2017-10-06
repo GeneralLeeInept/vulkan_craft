@@ -71,6 +71,11 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
+    if (!_texture.create(_device, "res/textures/cobblestone.png"))
+    {
+        return false;
+    }
+
     if (!create_descriptor_set_layout())
     {
         return false;
@@ -91,7 +96,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_texture.create(_device, "res/textures/dirt.png"))
+    if (!_device.upload_texture(_texture))
     {
         return false;
     }
@@ -161,32 +166,35 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
 {
     invalidate();
 
-    if (!_swapchain.create(&width, &height, true))
+    if (width && height)
     {
-        return false;
-    }
+        if (!_swapchain.create(&width, &height, true))
+        {
+            return false;
+        }
 
-    if (!_depth_buffer.create())
-    {
-        return false;
-    }
+        if (!_depth_buffer.create())
+        {
+            return false;
+        }
 
-    if (!_render_pass.create())
-    {
-        return false;
-    }
+        if (!_render_pass.create())
+        {
+            return false;
+        }
 
-    if (!_graphics_pipeline.create())
-    {
-        return false;
-    }
+        if (!_graphics_pipeline.create())
+        {
+            return false;
+        }
 
-    if (!create_frame_buffers())
-    {
-        return false;
-    }
+        if (!create_frame_buffers())
+        {
+            return false;
+        }
 
-    _valid_state = true;
+        _valid_state = true;
+    }
 
     return true;
 }
@@ -195,7 +203,7 @@ bool Renderer::draw_frame()
 {
     if (!_valid_state)
     {
-        return false;
+        return true;
     }
 
     if (!_swapchain.begin_frame())
@@ -435,7 +443,7 @@ bool Renderer::create_frame_buffers()
 
     for (VkImageView image_view : _swapchain.get_image_views())
     {
-        VkImageView attachments[2] =  { image_view, _depth_buffer.get_image_view() };
+        VkImageView attachments[2] = { image_view, _depth_buffer.get_image_view() };
         create_info.pAttachments = attachments;
 
         VkFramebuffer frame_buffer;
@@ -453,13 +461,17 @@ bool Renderer::create_graphics_pipeline()
 
 bool Renderer::create_vertex_buffer()
 {
-    static Vertex vertex_data[8] = { { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f } },    { { 0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
-                                     { { -0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f } },  { { -0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } },
-                                     { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f } },   { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f } },
-                                     { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f } }, { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } } };
+    static glm::vec3 positions[8] = { { 0.5f, 0.5f, 0.5f },  { 0.5f, 0.5f, -0.5f },  { -0.5f, 0.5f, -0.5f },  { -0.5f, 0.5f, 0.5f },
+                                      { 0.5f, -0.5f, 0.5f }, { -0.5f, -0.5f, 0.5f }, { -0.5f, -0.5f, -0.5f }, { 0.5f, -0.5f, -0.5f } };
+    static glm::vec3 colours[8] = { { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f },
+                                    { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } };
+    static glm::vec2 tex_coords[8] = {
+        { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }
+    };
 
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) },
-                               { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour), sizeof(glm::vec3) } };
+                               { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour), sizeof(glm::vec3) },
+                               { 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex_coord), sizeof(glm::vec2) } };
 
     _graphics_pipeline_factory.set_vertex_decl(decl);
 
@@ -468,14 +480,21 @@ bool Renderer::create_vertex_buffer()
         return false;
     }
 
-    void* mapped_memory;
+    Vertex* vertex_ptr;
 
-    if (!_vertex_buffer.map(&mapped_memory))
+    if (!_vertex_buffer.map((void**)&vertex_ptr))
     {
         return false;
     }
 
-    memcpy(mapped_memory, vertex_data, sizeof(vertex_data));
+    for (int i = 0; i < 8; ++i)
+    {
+        vertex_ptr->position = positions[i];
+        vertex_ptr->colour = colours[i];
+        vertex_ptr->tex_coord = tex_coords[i];
+        vertex_ptr++;
+    }
+
     _vertex_buffer.unmap();
 
     static uint16_t index_data[36];
@@ -527,6 +546,8 @@ bool Renderer::create_vertex_buffer()
         return false;
     }
 
+    void* mapped_memory;
+
     if (!_index_buffer.map(&mapped_memory))
     {
         return false;
@@ -540,16 +561,24 @@ bool Renderer::create_vertex_buffer()
 
 bool Renderer::create_descriptor_set_layout()
 {
-    VkDescriptorSetLayoutBinding ubo_binding = {};
-    ubo_binding.binding = 0;
-    ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ubo_binding.descriptorCount = 1;
-    ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    VkDescriptorSetLayoutBinding bindings[2];
+
+    bindings[0] = {};
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    bindings[1] = {};
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo layout_info = {};
     layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout_info.bindingCount = 1;
-    layout_info.pBindings = &ubo_binding;
+    layout_info.bindingCount = 2;
+    layout_info.pBindings = bindings;
 
     VK_CHECK_RESULT(vkCreateDescriptorSetLayout((VkDevice)_device, &layout_info, nullptr, &_descriptor_set_layout));
 
@@ -560,15 +589,19 @@ bool Renderer::create_descriptor_set_layout()
 
 bool Renderer::create_descriptor_set()
 {
-    VkDescriptorPoolSize pool_size = {};
-    pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pool_size.descriptorCount = 1;
+    VkDescriptorPoolSize pool_sizes[2];
+
+    pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_sizes[0].descriptorCount = 1;
+
+    pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pool_sizes[1].descriptorCount = 1;
 
     VkDescriptorPoolCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     create_info.maxSets = 1;
-    create_info.poolSizeCount = 1;
-    create_info.pPoolSizes = &pool_size;
+    create_info.poolSizeCount = 2;
+    create_info.pPoolSizes = pool_sizes;
     VK_CHECK_RESULT(vkCreateDescriptorPool((VkDevice)_device, &create_info, nullptr, &_descriptor_pool));
 
     VkDescriptorSetAllocateInfo alloc_info = {};
@@ -581,16 +614,31 @@ bool Renderer::create_descriptor_set()
 
     VkDescriptorBufferInfo buffer_info = _ubo_buffer.get_descriptor_info();
 
-    VkWriteDescriptorSet write = {};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = _descriptor_set;
-    write.dstBinding = 0;
-    write.dstArrayElement = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    write.pBufferInfo = &buffer_info;
+    VkDescriptorImageInfo image_info = {};
+    image_info.sampler = _texture._sampler;
+    image_info.imageView = _texture._image_view;
+    image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    vkUpdateDescriptorSets((VkDevice)_device, 1, &write, 0, nullptr);
+    VkWriteDescriptorSet descriptor_writes[2];
+    descriptor_writes[0] = {};
+    descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_writes[0].dstSet = _descriptor_set;
+    descriptor_writes[0].dstBinding = 0;
+    descriptor_writes[0].dstArrayElement = 0;
+    descriptor_writes[0].descriptorCount = 1;
+    descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptor_writes[0].pBufferInfo = &buffer_info;
+
+    descriptor_writes[1] = {};
+    descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptor_writes[1].dstSet = _descriptor_set;
+    descriptor_writes[1].dstBinding = 1;
+    descriptor_writes[1].dstArrayElement = 0;
+    descriptor_writes[1].descriptorCount = 1;
+    descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptor_writes[1].pImageInfo = &image_info;
+
+    vkUpdateDescriptorSets((VkDevice)_device, 2, descriptor_writes, 0, nullptr);
 
     return true;
 }

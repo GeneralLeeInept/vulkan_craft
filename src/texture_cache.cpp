@@ -70,11 +70,40 @@ bool Texture::create(VulkanDevice& device, const char* path)
         return false;
     }
 
+    if (!_image.create_view(VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1, _image_view))
+    {
+        return false;
+
+    }
+
+    VkSamplerCreateInfo sampler_info = {};
+    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_info.magFilter = VK_FILTER_LINEAR;
+    sampler_info.minFilter = VK_FILTER_LINEAR;
+    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.maxAnisotropy = 1.0f;
+    VK_CHECK_RESULT(vkCreateSampler((VkDevice)*_device, &sampler_info, nullptr, &_sampler));
+
     return true;
 }
 
 void Texture::destroy()
 {
+    if (_sampler)
+    {
+        vkDestroySampler((VkDevice)*_device, _sampler, nullptr);
+        _sampler = VK_NULL_HANDLE;
+    }
+
+    if (_image_view)
+    {
+        vkDestroyImageView((VkDevice)*_device, _image_view, nullptr);
+        _image_view = VK_NULL_HANDLE;
+    }
+
     _image.destroy();
     _staging_buffer.destroy();
 }
