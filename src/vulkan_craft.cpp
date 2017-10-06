@@ -102,8 +102,6 @@ void run_game(GLFWwindow* window)
 
     float prev_time = (float)glfwGetTime();
 
-    _camera.position.z = 5.0f;
-
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -132,7 +130,7 @@ void set_window_size(GLFWwindow* window, int width, int height)
 {
     if (width && height)
     {
-        glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 1.0f, 100.0f);
+        glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.5f, 100.0f);
         proj[1] *= -1.0f;
         _renderer.set_proj_matrix(proj);
         poll_mouse(window, _mouse_x, _mouse_y);

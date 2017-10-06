@@ -51,6 +51,9 @@
     <ClCompile Include="..\src\depth_buffer.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\geometry.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.h">
