@@ -89,6 +89,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\camera.h" />
     <ClInclude Include="..\src\depth_buffer.h" />
     <ClInclude Include="..\src\file.h" />
     <ClInclude Include="..\src\geometry.h" />

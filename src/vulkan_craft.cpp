@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 
+#include "camera.h"
 #include "renderer.h"
 
 void run_game(GLFWwindow* window);
@@ -31,6 +32,57 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 Renderer _renderer;
+Camera _camera;
+float _mouse_x;
+float _mouse_y;
+
+void poll_mouse(GLFWwindow* window, float& x, float& y)
+{
+    double dx, dy;
+    glfwGetCursorPos(window, &dx, &dy);
+    x = (float)dx;
+    y = (float)dy;
+}
+
+void update_input(GLFWwindow* window, float delta)
+{
+    float new_mouse_x;
+    float new_mouse_y;
+    poll_mouse(window, new_mouse_x, new_mouse_y);
+    _camera.turn((new_mouse_x - _mouse_x) * 2.0f, (new_mouse_y - _mouse_y) * 2.0f, delta);
+    _mouse_x = new_mouse_x;
+    _mouse_y = new_mouse_y;
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        _camera.move_forward(5.0f, delta);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        _camera.move_forward(-5.0f, delta);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        _camera.strafe(5.0f, delta);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        _camera.strafe(-5.0f, delta);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+    {
+        _camera.move_up(5.0f, delta);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
+    {
+        _camera.move_up(-5.0f, delta);
+    }
+}
 
 void run_game(GLFWwindow* window)
 {
@@ -45,18 +97,26 @@ void run_game(GLFWwindow* window)
     }
 
     glfwShowWindow(window);
+    
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    float prev_time = (float)glfwGetTime();
+
+    _camera.position.z = 5.0f;
 
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
 
-        _renderer.set_view_matrix(glm::lookAt(glm::vec3(0.0f, 0.0f, 6.0f - 3.0f * sinf(glm::radians(90.0f * (float)glfwGetTime()))), glm::vec3(),
-                                              glm::vec3(0.0f, 1.0f, 0.0f)));
+        float current_time = (float)glfwGetTime();
+        float delta = current_time - prev_time;
+        prev_time = current_time;
+
+        update_input(window, delta);
+
+        _renderer.set_view_matrix(_camera.get_view_matrix());
 
         glm::mat4x4 model;
-        model = glm::rotate(model, glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(90.0f * (float)glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
         _renderer.set_model_matrix(model);
 
         if (!_renderer.draw_frame())
@@ -75,6 +135,7 @@ void set_window_size(GLFWwindow* window, int width, int height)
         glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 1.0f, 100.0f);
         proj[1] *= -1.0f;
         _renderer.set_proj_matrix(proj);
+        poll_mouse(window, _mouse_x, _mouse_y);
     }
 
     if (!_renderer.set_window_size((uint32_t)width, (uint32_t)height))

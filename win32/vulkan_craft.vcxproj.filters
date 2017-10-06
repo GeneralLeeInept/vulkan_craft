@@ -95,6 +95,9 @@
     <ClInclude Include="..\src\depth_buffer.h">
       <Filter>render</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\camera.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\triangle.vert">

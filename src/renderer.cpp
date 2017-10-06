@@ -475,7 +475,7 @@ bool Renderer::create_vertex_buffer()
 
     _graphics_pipeline_factory.set_vertex_decl(decl);
 
-    if (!_vertex_buffer.create(_device, decl, 3))
+    if (!_vertex_buffer.create(_device, decl, 8))
     {
         return false;
     }
