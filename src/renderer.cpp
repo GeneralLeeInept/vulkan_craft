@@ -71,7 +71,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_texture.create(_device, "res/textures/dirt.png"))
+    if (!_textures.create(_device, "res/textures"))
     {
         return false;
     }
@@ -96,7 +96,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_device.upload_texture(_texture))
+    if (!_device.upload_texture(_textures))
     {
         return false;
     }
@@ -110,7 +110,7 @@ void Renderer::shutdown()
 {
     invalidate();
 
-    _texture.destroy();
+    _textures.destroy();
     _ubo_buffer.destroy();
     _graphics_pipeline.destroy();
 
@@ -471,7 +471,7 @@ bool Renderer::create_vertex_buffer()
 {
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) },
                                { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), sizeof(glm::vec3) },
-                               { 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex_coord), sizeof(glm::vec2) } };
+                               { 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tex_coord), sizeof(glm::vec3) } };
 
     _graphics_pipeline_factory.set_vertex_decl(decl);
 
@@ -582,8 +582,8 @@ bool Renderer::create_descriptor_set()
     VkDescriptorBufferInfo buffer_info = _ubo_buffer.get_descriptor_info();
 
     VkDescriptorImageInfo image_info = {};
-    image_info.sampler = _texture._sampler;
-    image_info.imageView = _texture._image_view;
+    image_info.sampler = _textures._sampler;
+    image_info.imageView = _textures._image_view;
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     VkWriteDescriptorSet descriptor_writes[2];

@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 class Texture;
+class TextureArray;
 
 class VulkanDevice
 {
@@ -44,6 +45,7 @@ public:
 
     VkCommandBuffer begin_one_time_commands();
     bool upload_texture(Texture& texture);
+    bool upload_texture(TextureArray& texture_array);
 
 private:
     std::vector<VkQueueFamilyProperties> _queue_family_properties;

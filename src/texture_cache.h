@@ -2,6 +2,7 @@
 
 #include <map>
 #include <stdint.h>
+#include <string>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -25,23 +26,21 @@ public:
     VkSampler _sampler = VK_NULL_HANDLE;
 };
 
-class TextureCache
+class TextureArray
 {
 public:
-    bool initialise();
+    bool create(VulkanDevice& device, const std::vector<std::string>& paths);
+    bool create(VulkanDevice& device, const char* directory);
+    void destroy();
 
-private:
-    bool load(const char* path);
+    int layer_index(const std::string& name);
 
-    struct Texture
-    {
-        uint16_t width;
-        uint16_t height;
-        uint8_t channels;
-        std::vector<uint8_t> pixels;
-    };
-
-
-    typedef std::map<const char*, Texture> Cache;
-    Cache _textures;
+public:
+    VulkanBuffer _staging_buffer;
+    VulkanImage _image;
+    VulkanDevice* _device = nullptr;
+    VkImageView _image_view = VK_NULL_HANDLE;
+    VkSampler _sampler = VK_NULL_HANDLE;
+    uint32_t _layer_count = 0;
+    std::vector<std::string> _layer_names;
 };

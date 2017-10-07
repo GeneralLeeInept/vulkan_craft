@@ -71,7 +71,7 @@ private:
     VkDescriptorPool _descriptor_pool = VK_NULL_HANDLE;
     VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
 
-    Texture _texture;
+    TextureArray _textures;
 
     uint32_t _index_count[9];
 

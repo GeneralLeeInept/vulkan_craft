@@ -9,7 +9,7 @@ struct Vertex
 {
     glm::vec3 position;
     glm::vec3 normal;
-    glm::vec2 tex_coord;
+    glm::vec3 tex_coord;
 };
 
 struct Mesh
@@ -68,6 +68,8 @@ public:
 class WorldGen
 {
 public:
+    WorldGen();
+
     void generate_chunk(int chunk_x, int chunk_y, Chunk& chunk);
 
 private:

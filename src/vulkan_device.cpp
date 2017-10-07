@@ -290,7 +290,8 @@ bool VulkanDevice::upload_texture(Texture& texture)
     to_transition_dst.subresourceRange.levelCount = 1;
     to_transition_dst.subresourceRange.baseArrayLayer = 0;
     to_transition_dst.subresourceRange.layerCount = 1;
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transition_dst);
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &to_transition_dst);
 
     VkBufferImageCopy region = {};
     region.bufferOffset = 0;
@@ -301,7 +302,8 @@ bool VulkanDevice::upload_texture(Texture& texture)
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
     region.imageExtent = texture._image.get_extent();
-    vkCmdCopyBufferToImage(command_buffer, (VkBuffer)texture._staging_buffer, (VkImage)texture._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(command_buffer, (VkBuffer)texture._staging_buffer, (VkImage)texture._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                           &region);
 
     VkImageMemoryBarrier to_shader = {};
     to_transition_dst.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -317,7 +319,70 @@ bool VulkanDevice::upload_texture(Texture& texture)
     to_transition_dst.subresourceRange.levelCount = 1;
     to_transition_dst.subresourceRange.baseArrayLayer = 0;
     to_transition_dst.subresourceRange.layerCount = 1;
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transition_dst);
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &to_transition_dst);
+
+    VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
+
+    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr);
+
+    return true;
+}
+
+bool VulkanDevice::upload_texture(TextureArray& texture_array)
+{
+    VkCommandBuffer command_buffer = begin_one_time_commands();
+
+    if (command_buffer == VK_NULL_HANDLE)
+    {
+        return false;
+    }
+
+    VkImageMemoryBarrier to_transition_dst = {};
+    to_transition_dst.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    to_transition_dst.srcAccessMask = 0;
+    to_transition_dst.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    to_transition_dst.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    to_transition_dst.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    to_transition_dst.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.image = texture_array._image;
+    to_transition_dst.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    to_transition_dst.subresourceRange.baseMipLevel = 0;
+    to_transition_dst.subresourceRange.levelCount = 1;
+    to_transition_dst.subresourceRange.baseArrayLayer = 0;
+    to_transition_dst.subresourceRange.layerCount = texture_array._layer_count;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &to_transition_dst);
+
+    VkBufferImageCopy region = {};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = texture_array._layer_count;
+    region.imageExtent = texture_array._image.get_extent();
+    vkCmdCopyBufferToImage(command_buffer, (VkBuffer)texture_array._staging_buffer, (VkImage)texture_array._image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    VkImageMemoryBarrier to_shader = {};
+    to_transition_dst.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    to_transition_dst.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    to_transition_dst.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    to_transition_dst.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    to_transition_dst.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    to_transition_dst.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_transition_dst.image = texture_array._image;
+    to_transition_dst.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    to_transition_dst.subresourceRange.baseMipLevel = 0;
+    to_transition_dst.subresourceRange.levelCount = 1;
+    to_transition_dst.subresourceRange.baseArrayLayer = 0;
+    to_transition_dst.subresourceRange.layerCount = texture_array._layer_count;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &to_transition_dst);
 
     VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
 
