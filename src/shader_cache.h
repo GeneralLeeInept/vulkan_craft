@@ -10,11 +10,17 @@ class ShaderCache
 public:
     bool initialise(VkDevice device);
 
-    VkShaderModule load(const char* path);
+    VkShaderModule load(const std::wstring& path);
     void release(VkShaderModule shader);
 
 private:
-    std::map<std::string, VkShaderModule> _cache;
-    std::map<VkShaderModule, int> _ref_counts;
+    struct CacheEntry
+    {
+        VkShaderModule shader_module;
+        int ref_count;
+    };
+
+    typedef std::map<std::wstring, CacheEntry> Cache;
+    Cache _cache;
     VkDevice _device;
 };

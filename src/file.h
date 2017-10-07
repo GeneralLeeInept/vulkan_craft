@@ -8,9 +8,9 @@ class File
 public:
     ~File() { close(); }
 
-    bool open(const char* path, const char* mode)
+    bool open(const std::wstring& path)
     {
-        _fp = fopen(path, mode);
+        _wfopen_s(&_fp, path.c_str(), L"rb");
 
         if (_fp)
         {

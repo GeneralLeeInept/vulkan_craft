@@ -6,6 +6,7 @@
 #define STBI_ONLY_PNG
 #include <stb_image.h>
 
+#include "file.h"
 #include "vulkan.h"
 #include "vulkan_device.h"
 
@@ -14,9 +15,17 @@ class PngLoader
 public:
     ~PngLoader() { reset(); }
 
-    bool load(const char* path)
+    bool load(const std::wstring& path)
     {
-        pixels = stbi_load(path, &width, &height, &components, STBI_rgb_alpha);
+        File fp;
+
+        if (!fp.open(path))
+        {
+            return false;
+        }
+
+        pixels = stbi_load_from_file(fp, &width, &height, &components, STBI_rgb_alpha);
+
         return pixels != nullptr;
     }
 
@@ -40,7 +49,7 @@ public:
     int components = 0;
 };
 
-bool Texture::create(VulkanDevice& device, const char* path)
+bool Texture::create(VulkanDevice& device, const std::wstring& path)
 {
     _device = &device;
 
@@ -110,7 +119,7 @@ void Texture::destroy()
     _staging_buffer.destroy();
 }
 
-bool TextureArray::create(VulkanDevice& device, const std::vector<std::string>& paths)
+bool TextureArray::create(VulkanDevice& device, const std::vector<std::wstring>& paths)
 {
     _device = &device;
 
@@ -186,22 +195,22 @@ bool TextureArray::create(VulkanDevice& device, const std::vector<std::string>& 
     sampler_info.maxAnisotropy = 1.0f;
     VK_CHECK_RESULT(vkCreateSampler((VkDevice)*_device, &sampler_info, nullptr, &_sampler));
 
-    for (const std::string& path : paths)
+    for (const std::wstring& path : paths)
     {
-        char name[_MAX_FNAME];
-        _splitpath(path.c_str(), nullptr, nullptr, name, nullptr);
-        _layer_names.push_back(std::string(name));
+        wchar_t name[_MAX_FNAME];
+        _wsplitpath(path.c_str(), nullptr, nullptr, name, nullptr);
+        _layer_names.push_back(name);
     }
 
     return true;
 }
 
-bool TextureArray::create(VulkanDevice& device, const char* directory)
+bool TextureArray::create(VulkanDevice& device, const std::wstring& directory)
 {
-    std::vector<std::string> paths;
-    std::string search_path = std::string(directory) + "/*.png";
-    WIN32_FIND_DATAA fd;
-    HANDLE hFind = ::FindFirstFileA(search_path.c_str(), &fd);
+    std::vector<std::wstring> paths;
+    std::wstring search_path = directory + L"/*.png";
+    WIN32_FIND_DATA fd;
+    HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
 
     if (hFind != INVALID_HANDLE_VALUE)
     {
@@ -211,10 +220,9 @@ bool TextureArray::create(VulkanDevice& device, const char* directory)
             // , delete '!' read other 2 default folder . and ..
             if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
             {
-                std::string path = std::string(directory) + "/" + std::string(fd.cFileName);
-                paths.push_back(path);
+                paths.push_back(directory + L"/" + fd.cFileName);
             }
-        } while (::FindNextFileA(hFind, &fd));
+        } while (::FindNextFile(hFind, &fd));
 
         ::FindClose(hFind);
     }

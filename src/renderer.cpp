@@ -55,8 +55,8 @@ bool Renderer::initialise(GLFWwindow* window)
 
     _graphics_pipeline_factory.initialise(_device, _swapchain, _render_pass, 0);
 
-    _vertex_shader = _shader_cache.load("res/shaders/triangle.vert.spv");
-    _fragment_shader = _shader_cache.load("res/shaders/triangle.frag.spv");
+    _vertex_shader = _shader_cache.load(L"res/shaders/triangle.vert.spv");
+    _fragment_shader = _shader_cache.load(L"res/shaders/triangle.frag.spv");
 
     if (!_vertex_shader && !_fragment_shader)
     {
@@ -71,7 +71,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_textures.create(_device, "res/textures"))
+    if (!_textures.create(_device, L"res/textures"))
     {
         return false;
     }

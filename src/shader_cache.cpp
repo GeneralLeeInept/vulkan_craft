@@ -4,11 +4,11 @@
 
 #include "file.h"
 
-static VkShaderModule do_load(VkDevice device, const char* path)
+static VkShaderModule do_load(VkDevice device, const std::wstring& path)
 {
     File fp;
 
-    if (!fp.open(path, "rb"))
+    if (!fp.open(path))
     {
         return VK_NULL_HANDLE;
     }
@@ -45,24 +45,24 @@ bool ShaderCache::initialise(VkDevice device)
     return true;
 }
 
-VkShaderModule ShaderCache::load(const char* path)
+VkShaderModule ShaderCache::load(const std::wstring& path)
 {
-    std::map<std::string, VkShaderModule>::iterator it = _cache.find(path);
+    Cache::iterator it = _cache.find(path);
     VkShaderModule shader = VK_NULL_HANDLE;
 
     if (it != _cache.end())
     {
-        shader = _cache[path];
+        shader = _cache[path].shader_module;
     }
     else
     {
         shader = do_load(_device, path);
-        _cache[path] = shader;
+        _cache[path].shader_module = shader;
     }
 
     if (shader)
     {
-        _ref_counts[shader]++;
+        _cache[path].ref_count++;
     }
 
     return shader;
@@ -72,20 +72,18 @@ void ShaderCache::release(VkShaderModule shader)
 {
     if (shader)
     {
-        if (--_ref_counts[shader] == 0)
+        for (Cache::value_type& cache_entry : _cache)
         {
-            _ref_counts.erase(shader);
-
-            for (std::map<std::string, VkShaderModule>::iterator it = _cache.begin(); it != _cache.end(); ++it)
+            if (cache_entry.second.shader_module == shader)
             {
-                if (it->second == shader)
+                if (--cache_entry.second.ref_count == 0)
                 {
-                    _cache.erase(it);
+                    _cache.erase(cache_entry.first);
                     break;
                 }
             }
-
-            vkDestroyShaderModule(_device, shader, nullptr);
         }
+
+        vkDestroyShaderModule(_device, shader, nullptr);
     }
 }

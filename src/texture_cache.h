@@ -15,7 +15,7 @@ class VulkanDevice;
 class Texture
 {
 public:
-    bool create(VulkanDevice& device, const char* path);
+    bool create(VulkanDevice& device, const std::wstring& path);
     void destroy();
 
 public:
@@ -29,11 +29,11 @@ public:
 class TextureArray
 {
 public:
-    bool create(VulkanDevice& device, const std::vector<std::string>& paths);
-    bool create(VulkanDevice& device, const char* directory);
+    bool create(VulkanDevice& device, const std::vector<std::wstring>& paths);
+    bool create(VulkanDevice& device, const std::wstring& directory);
     void destroy();
 
-    int layer_index(const std::string& name);
+    int layer_index(const std::wstring& name);
 
 public:
     VulkanBuffer _staging_buffer;
@@ -42,5 +42,5 @@ public:
     VkImageView _image_view = VK_NULL_HANDLE;
     VkSampler _sampler = VK_NULL_HANDLE;
     uint32_t _layer_count = 0;
-    std::vector<std::string> _layer_names;
+    std::vector<std::wstring> _layer_names;
 };
