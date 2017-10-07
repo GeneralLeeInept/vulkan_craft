@@ -161,6 +161,11 @@ static void add_face(int cx, int cz, int bx, int by, int bz, BlockType type, Blo
 }
 /* clang-format on */
 
+static inline bool is_transparent(BlockType block_type)
+{
+    return block_type == BlockType::Air;
+}
+
 void Chunk::create_mesh()
 {
     mesh.vertices.resize(0);
@@ -175,27 +180,27 @@ void Chunk::create_mesh()
                 BlockType block_type = block(bx, by, bz);
                 if (block_type != BlockType::Air)
                 {
-                    if (block(bx, by + 1, bz) == BlockType::Air)
+                    if (is_transparent(block(bx, by + 1, bz)))
                     {
                         add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::Top, mesh);
                     }
-                    if (block(bx, by - 1, bz) == BlockType::Air)
+                    if (is_transparent(block(bx, by - 1, bz)))
                     {
                         add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::Bottom, mesh);
                     }
-                    if (block(bx, by, bz + 1) == BlockType::Air)
+                    if (is_transparent(block(bx, by, bz + 1)))
                     {
                         add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::North, mesh);
                     }
-                    if (block(bx, by, bz - 1) == BlockType::Air)
+                    if (is_transparent(block(bx, by, bz - 1)))
                     {
                         add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::South, mesh);
                     }
-                    if (block(bx + 1, by, bz) == BlockType::Air)
+                    if (is_transparent(block(bx + 1, by, bz)))
                     {
                         add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::East, mesh);
                     }
-                    if (block(bx - 1, by, bz) == BlockType::Air)
+                    if (is_transparent(block(bx - 1, by, bz)))
                     {
                         add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::West, mesh);
                     }
