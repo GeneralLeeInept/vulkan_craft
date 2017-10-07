@@ -6,6 +6,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "camera.h"
+#include "geometry.h"
 #include "renderer.h"
 
 void run_game(GLFWwindow* window);

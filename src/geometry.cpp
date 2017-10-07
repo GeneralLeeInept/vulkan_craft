@@ -155,12 +155,30 @@ void Chunk::create_mesh()
             {
                 if (block(bx, by, bz) != BlockType::Air)
                 {
-                    add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::Top, mesh);
-                    add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::Bottom, mesh);
-                    add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::North, mesh);
-                    add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::South, mesh);
-                    add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::East, mesh);
-                    add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::West, mesh);
+                    if (block(bx, by + 1, bz) == BlockType::Air)
+                    {
+                        add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::Top, mesh);
+                    }
+                    if (block(bx, by - 1, bz) == BlockType::Air)
+                    {
+                        add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::Bottom, mesh);
+                    }
+                    if (block(bx, by, bz + 1) == BlockType::Air)
+                    {
+                        add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::North, mesh);
+                    }
+                    if (block(bx, by, bz - 1) == BlockType::Air)
+                    {
+                        add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::South, mesh);
+                    }
+                    if (block(bx + 1, by, bz) == BlockType::Air)
+                    {
+                        add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::East, mesh);
+                    }
+                    if (block(bx - 1, by, bz) == BlockType::Air)
+                    {
+                        add_face(chunk_x, chunk_z, bx, by, bz, BlockFace::West, mesh);
+                    }
                 }
             }
         }
@@ -194,7 +212,7 @@ void WorldGen::generate_chunk(int chunk_x, int chunk_z, Chunk& chunk)
 
             for (int by = 0; by < height; ++by)
             {
-                chunk.block(bx, by, bz) = BlockType::Dirt;
+                chunk.set_block(bx, by, bz, BlockType::Dirt);
             }
         }
     }
