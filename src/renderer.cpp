@@ -71,7 +71,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_texture.create(_device, "res/textures/orientation.png"))
+    if (!_texture.create(_device, "res/textures/dirt.png"))
     {
         return false;
     }
@@ -124,8 +124,12 @@ void Renderer::shutdown()
         vkDestroyDescriptorSetLayout((VkDevice)_device, _descriptor_set_layout, nullptr);
     }
 
-    _index_buffer.destroy();
-    _vertex_buffer.destroy();
+    for (int i = 0; i < 9; ++i)
+    {
+        _index_buffer[i].destroy();
+        _vertex_buffer[i].destroy();
+    }
+
     _depth_buffer.destroy();
     _swapchain.destroy();
 
@@ -251,13 +255,17 @@ bool Renderer::draw_frame()
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)_graphics_pipeline, 0, 1, &_descriptor_set, 0,
                             nullptr);
 
-    VkBuffer vertex_buffer = (VkBuffer)_vertex_buffer;
-    VkDeviceSize offsets = 0;
-    vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, &offsets);
-
-    vkCmdBindIndexBuffer(command_buffer, (VkBuffer)_index_buffer, 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdDrawIndexed(command_buffer, 36 * (16 * 16 + 1), 1, 0, 0, 0);
+    for (int i = 0; i < 9; ++i)
+    {
+        if (_index_count[i] > 0)
+        {
+            VkBuffer vertex_buffer = (VkBuffer)_vertex_buffer[i];
+            VkDeviceSize offsets = 0;
+            vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, &offsets);
+            vkCmdBindIndexBuffer(command_buffer, (VkBuffer)_index_buffer[i], 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(command_buffer, _index_count[i], 1, 0, 0, 0);
+        }
+    }
 
     vkCmdEndRenderPass(command_buffer);
 
@@ -319,7 +327,7 @@ bool Renderer::create_instance()
     create_info.pApplicationInfo = &application_info;
 
 #if defined(NDEBUG)
-    instance_create_info.ppEnabledExtensionNames = glfwGetRequiredInstanceExtensions(&instance_create_info.enabledExtensionCount);
+    create_info.ppEnabledExtensionNames = glfwGetRequiredInstanceExtensions(&create_info.enabledExtensionCount);
 #else
     const char* validation_layer = "VK_LAYER_LUNARG_standard_validation";
     create_info.enabledLayerCount = 1;
@@ -462,44 +470,58 @@ bool Renderer::create_graphics_pipeline()
 bool Renderer::create_vertex_buffer()
 {
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) },
-                               { 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex_coord), sizeof(glm::vec2) } };
+                               { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), sizeof(glm::vec3) },
+                               { 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex_coord), sizeof(glm::vec2) } };
 
     _graphics_pipeline_factory.set_vertex_decl(decl);
 
-    Chunk chunk;
-    chunk.generate();
-    chunk.create_mesh();
-    Mesh& mesh = chunk.mesh;
+    WorldGen gen;
 
-    if (!_vertex_buffer.create(_device, decl, (uint32_t)mesh.vertices.size()))
+    for (int cz = -1; cz <= 1; ++cz)
     {
-        return false;
+        for (int cx = -1; cx <= 1; ++cx)
+        {
+            int i = (cz + 1) * 3 + (cx + 1);
+            Chunk chunk;
+            gen.generate_chunk(cx, cz, chunk);
+            chunk.create_mesh();
+            Mesh& mesh = chunk.mesh;
+
+            _index_count[i] = (uint32_t)mesh.indices.size();
+
+            if (_index_count[i] > 0)
+            {
+                if (!_vertex_buffer[i].create(_device, decl, (uint32_t)mesh.vertices.size()))
+                {
+                    return false;
+                }
+
+                void* memory;
+
+                if (!_vertex_buffer[i].map((void**)&memory))
+                {
+                    return false;
+                }
+
+                memcpy(memory, mesh.vertices.data(), sizeof(Vertex) * mesh.vertices.size());
+                _vertex_buffer[i].unmap();
+
+                if (!_index_buffer[i].create(_device, sizeof(uint32_t) * mesh.indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+                {
+                    return false;
+                }
+
+                if (!_index_buffer[i].map(&memory))
+                {
+                    return false;
+                }
+
+                memcpy(memory, mesh.indices.data(), sizeof(uint32_t) * _index_count[i]);
+                _index_buffer[i].unmap();
+            }
+        }
     }
-
-    void* memory;
-
-    if (!_vertex_buffer.map((void**)&memory))
-    {
-        return false;
-    }
-
-    memcpy(memory, mesh.vertices.data(), sizeof(Vertex) * mesh.vertices.size());
-    _vertex_buffer.unmap();
-
-
-    if (!_index_buffer.create(_device, sizeof(uint16_t) * mesh.indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-    {
-        return false;
-    }
-
-    if (!_index_buffer.map(&memory))
-    {
-        return false;
-    }
-
-    memcpy(memory, mesh.indices.data(), sizeof(uint16_t) * mesh.indices.size());
-    _index_buffer.unmap();
 
     return true;
 }

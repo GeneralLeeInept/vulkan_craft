@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\deps\glfw-3.2.1\include;$(VULKAN_SDK)\Include;..\deps\glm-0.9.8.5;..\deps\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\deps\glfw-3.2.1\include;$(VULKAN_SDK)\Include;..\deps\glm-0.9.8.5;..\deps\stb;..\deps\libnoise-1.0.0\noise\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -47,8 +47,11 @@
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Message>Copying textures</Message>
-      <Command>robocopy ..\res\textures $(TargetDir)res\textures /MIR || if %errorlevel% NEQ 1 exit /b %errorlevel%</Command>
+      <Message>Copying resources</Message>
+      <Command>
+        robocopy ..\res\textures $(TargetDir)res\textures /MIR || if %errorlevel% NEQ 1 exit /b %errorlevel%
+        xcopy /Y /D /I $(SolutionDir)_builds\libnoise\$(Configuration)\$(Platform)\*.dll $(TargetDir)
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -85,6 +88,9 @@
     <ClCompile Include="..\src\vulkan_swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\external\libnoise-1.0.0\noise\vs2015\libnoise.vcxproj">
+      <Project>{5d2c39b9-ca32-4080-8a78-0808d4da7818}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\deps\glfw-3.2.1\glfw-build\src\glfw.vcxproj">
       <Project>{6346ef12-9a2d-3b45-b082-d05823b7f13c}</Project>
     </ProjectReference>

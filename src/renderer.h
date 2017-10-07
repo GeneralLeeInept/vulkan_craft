@@ -54,8 +54,8 @@ private:
     GraphicsPipelineFactory _graphics_pipeline_factory;
     GraphicsPipeline _graphics_pipeline;
     VulkanBuffer _ubo_buffer;
-    VulkanBuffer _index_buffer;
-    VertexBuffer _vertex_buffer;
+    VulkanBuffer _index_buffer[9];
+    VertexBuffer _vertex_buffer[9];
     std::vector<VkFramebuffer> _frame_buffers;
     GLFWwindow* _window = nullptr;
     VkInstance _vulkan_instance = VK_NULL_HANDLE;
@@ -72,6 +72,8 @@ private:
     VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
 
     Texture _texture;
+
+    uint32_t _index_count[9];
 
     bool _valid_state = false;
 };

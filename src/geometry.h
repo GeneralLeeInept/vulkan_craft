@@ -3,10 +3,12 @@
 #include <vector>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <noise.h>
 
 struct Vertex
 {
     glm::vec3 position;
+    glm::vec3 normal;
     glm::vec2 tex_coord;
 };
 
@@ -28,6 +30,7 @@ enum class BlockFace : uint8_t
 
 enum class BlockType : uint8_t
 {
+    Air,
     Brick,
     OreCoal,
     Cobble,
@@ -54,12 +57,19 @@ public:
         return blocks[chunk_x + (chunk_z * chunk_size) + (chunk_y * max_height)];
     }
 
+    void clear();
     void create_mesh();
-    void generate();
 
     Mesh mesh;
     int chunk_x = 0;
     int chunk_z = 0;
 };
 
-void add_face(int cx, int cy, int bx, int by, int bz, BlockFace face, Mesh& mesh);
+class WorldGen
+{
+public:
+    void generate_chunk(int chunk_x, int chunk_y, Chunk& chunk);
+
+private:
+    noise::module::Perlin _perlin;
+};
