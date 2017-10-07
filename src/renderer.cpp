@@ -124,7 +124,7 @@ void Renderer::shutdown()
         vkDestroyDescriptorSetLayout((VkDevice)_device, _descriptor_set_layout, nullptr);
     }
 
-    for (int i = 0; i < 9; ++i)
+    for (int i = 0; i < 25; ++i)
     {
         _index_buffer[i].destroy();
         _vertex_buffer[i].destroy();
@@ -255,7 +255,7 @@ bool Renderer::draw_frame()
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)_graphics_pipeline, 0, 1, &_descriptor_set, 0,
                             nullptr);
 
-    for (int i = 0; i < 9; ++i)
+    for (int i = 0; i < 25; ++i)
     {
         if (_index_count[i] > 0)
         {
@@ -477,13 +477,13 @@ bool Renderer::create_vertex_buffer()
 
     WorldGen gen;
 
-    for (int cz = -1; cz <= 1; ++cz)
+    for (int cz = 0; cz < 5; ++cz)
     {
-        for (int cx = -1; cx <= 1; ++cx)
+        for (int cx = 0; cx < 5; ++cx)
         {
-            int i = (cz + 1) * 3 + (cx + 1);
+            int i = cz * 5 + cx;
             Chunk chunk;
-            gen.generate_chunk(cx, cz, chunk);
+            gen.generate_chunk(cx - 2, cz - 2, chunk);
             chunk.create_mesh();
             Mesh& mesh = chunk.mesh;
 

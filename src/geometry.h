@@ -32,6 +32,7 @@ enum class BlockFace : uint8_t
 enum class BlockType : uint8_t
 {
     Air,
+    Bedrock,
     Brick,
     OreCoal,
     Cobble,
@@ -40,10 +41,12 @@ enum class BlockType : uint8_t
     Dirt,
     Grass,
     OreIron,
+    OreGold,
     OreLapis,
     Leaves,
     Log,
-    Planks
+    Planks,
+    Stone
 };
 
 class Chunk
