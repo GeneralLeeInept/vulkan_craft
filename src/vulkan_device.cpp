@@ -2,6 +2,7 @@
 
 #include "texture_cache.h"
 #include "vulkan.h"
+#include "vulkan_buffer.h"
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rhs)
 {
@@ -387,6 +388,34 @@ bool VulkanDevice::upload_texture(TextureArray& texture_array)
     VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
 
     submit(command_buffer, 0, nullptr, nullptr, 0, nullptr, VK_NULL_HANDLE);
+    vkQueueWaitIdle(_graphics_queue);
+    vkFreeCommandBuffers(_device, _copy_command_pool, 1, &command_buffer);
+
+    texture_array._staging_buffer.destroy();
+
+    return true;
+}
+
+bool VulkanDevice::copy_buffer(const VulkanBuffer& src, VkBuffer& dest, VkDeviceSize src_offset, VkDeviceSize dest_offset, VkDeviceSize size)
+{
+    VkCommandBuffer command_buffer = begin_one_time_commands();
+
+    if (command_buffer == VK_NULL_HANDLE)
+    {
+        return false;
+    }
+    
+    VkBufferCopy buffer_copy = {};
+    buffer_copy.srcOffset = src_offset;
+    buffer_copy.dstOffset = dest_offset;
+    buffer_copy.size = size;
+    vkCmdCopyBuffer(command_buffer, (VkBuffer)src, dest, 1, &buffer_copy);
+
+    VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
+
+    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr, VK_NULL_HANDLE);
+    vkQueueWaitIdle(_graphics_queue);
+    vkFreeCommandBuffers(_device, _copy_command_pool, 1, &command_buffer);
 
     return true;
 }

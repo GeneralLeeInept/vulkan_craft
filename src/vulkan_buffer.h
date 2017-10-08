@@ -7,6 +7,8 @@ class VulkanDevice;
 class VulkanBuffer
 {
 public:
+    ~VulkanBuffer() { destroy(); }
+
     bool create(VulkanDevice& device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memory_properties);
     void destroy();
 

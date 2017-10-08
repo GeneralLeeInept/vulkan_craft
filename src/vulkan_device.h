@@ -3,6 +3,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+class VulkanBuffer;
 class Texture;
 class TextureArray;
 
@@ -46,6 +47,7 @@ public:
     VkCommandBuffer begin_one_time_commands();
     bool upload_texture(Texture& texture);
     bool upload_texture(TextureArray& texture_array);
+    bool copy_buffer(const VulkanBuffer& src, VkBuffer& dest, VkDeviceSize src_offset, VkDeviceSize dest_offset, VkDeviceSize size);
 
 private:
     std::vector<VkQueueFamilyProperties> _queue_family_properties;

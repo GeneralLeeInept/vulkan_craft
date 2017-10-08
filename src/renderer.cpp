@@ -260,12 +260,12 @@ bool Renderer::add_mesh(const Mesh& mesh)
     VkBufferCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     create_info.size = vertex_count * sizeof(mesh.vertices[0]);
-    create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VK_CHECK_RESULT(vkCreateBuffer((VkDevice)_device, &create_info, nullptr, &render_mesh.vertex_buffer));
 
     create_info.size = render_mesh.index_count * sizeof(mesh.indices[0]);
-    create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VK_CHECK_RESULT(vkCreateBuffer((VkDevice)_device, &create_info, nullptr, &render_mesh.index_buffer));
 
@@ -277,7 +277,9 @@ bool Renderer::add_mesh(const Mesh& mesh)
 
     VkMemoryRequirements memory_requirements;
     memory_requirements.alignment = max(vertex_memory_requirements.alignment, index_memory_requirements.alignment);
-    VkDeviceSize index_data_offset = (vertex_memory_requirements.size + index_memory_requirements.alignment - 1) & ~(index_memory_requirements.alignment - 1); // TODO: Fail on non-power of 2 alignments (like that would ever happen?)
+    VkDeviceSize index_data_offset =
+            (vertex_memory_requirements.size + index_memory_requirements.alignment - 1) &
+            ~(index_memory_requirements.alignment - 1); // TODO: Fail on non-power of 2 alignments (like that would ever happen?)
     memory_requirements.size = index_data_offset + index_memory_requirements.size;
     memory_requirements.memoryTypeBits = vertex_memory_requirements.memoryTypeBits & index_memory_requirements.memoryTypeBits;
 
@@ -286,8 +288,26 @@ bool Renderer::add_mesh(const Mesh& mesh)
         return false;
     }
 
+    VulkanBuffer staging_buffer;
+    if (!staging_buffer.create(_device, memory_requirements.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+    {
+        return false;
+    }
+
+    uint8_t* memory;
+
+    if (!staging_buffer.map((void**)&memory))
+    {
+        return false;
+    }
+
+    memcpy(memory, mesh.vertices.data(), sizeof(mesh.vertices[0]) * mesh.vertices.size());
+    memcpy(memory + index_data_offset, mesh.indices.data(), sizeof(mesh.indices[0]) * mesh.indices.size());
+    staging_buffer.unmap();
+
     VkDeviceSize offset;
-    if (!_device.allocate_memory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memory_requirements, render_mesh.memory, offset))
+    if (!_device.allocate_memory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memory_requirements, render_mesh.memory, offset))
     {
         return false;
     }
@@ -295,12 +315,13 @@ bool Renderer::add_mesh(const Mesh& mesh)
     VK_CHECK_RESULT(vkBindBufferMemory((VkDevice)_device, render_mesh.vertex_buffer, render_mesh.memory, offset));
     VK_CHECK_RESULT(vkBindBufferMemory((VkDevice)_device, render_mesh.index_buffer, render_mesh.memory, offset + index_data_offset));
 
-    uint8_t* memory;
-    VK_CHECK_RESULT(vkMapMemory((VkDevice)_device, render_mesh.memory, offset, memory_requirements.size, 0, (void**)&memory));
+    if (!_device.copy_buffer(staging_buffer, render_mesh.vertex_buffer, 0, 0, vertex_memory_requirements.size) ||
+        !_device.copy_buffer(staging_buffer, render_mesh.index_buffer, index_data_offset, 0, index_memory_requirements.size))
+    {
+        return false;
+    }
 
-    memcpy(memory, mesh.vertices.data(), sizeof(mesh.vertices[0]) * mesh.vertices.size());
-    memcpy(memory + index_data_offset, mesh.indices.data(), sizeof(mesh.indices[0]) * mesh.indices.size());
-    vkUnmapMemory((VkDevice)_device, render_mesh.memory);
+    staging_buffer.destroy();
 
     _meshes.push_back(std::move(render_mesh));
 
