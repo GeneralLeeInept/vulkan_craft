@@ -61,6 +61,6 @@ public:
     }
 
     float pitch = 0.0f;
-    float yaw = 0.0f;
+    float yaw = 180.0f;
     glm::vec3 position = glm::vec3();
 };

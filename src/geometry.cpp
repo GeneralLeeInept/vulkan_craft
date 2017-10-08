@@ -21,16 +21,6 @@ static int block_texture_layers[][6] = {
     { 29, 29, 29, 29, 29, 29 }, // Stone
 };
 
-inline float chunk_to_world_x(int cx, int bx)
-{
-    return (float)(cx * Chunk::chunk_size + bx);
-}
-
-inline float chunk_to_world_z(int cz, int bz)
-{
-    return (float)(cz * -Chunk::chunk_size - bz);
-}
-
 static void add_polygon(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, Mesh& mesh)
 {
     uint32_t base_index = (uint32_t)mesh.vertices.size();
@@ -46,120 +36,61 @@ static void add_polygon(const std::vector<Vertex>& vertices, const std::vector<u
     }
 }
 
-/* clang-format off */
+// Unit cube vertices, counter-clockwise winding
+static glm::vec3 unit_cube_face_verts[6][4] = {
+    // Top face (Y = 1)
+    { { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+
+    // Bottom face (Y = 0)
+    { { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
+
+    // North face (Z = 0)
+    { { 1.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+
+    // South face (Z = 1)
+    { { 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f } },
+
+    // East face (X = 1)
+    { { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } },
+
+    // West face (X = 0)
+    { { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f } }
+};
+
+// Unit cube face normals
+static glm::vec3 unit_cube_face_normals[6] = {
+    // Top face (Y = 1)
+    { 0.0f, 1.0f, 0.0f },
+
+    // Bottom face (Y = 0)
+    { 0.0f, -1.0f, 0.0f },
+
+    // North face (Z = 0)
+    { 0.0f, 0.0f, -1.0f },
+
+    // South face (Z = 1)
+    { 0.0f, 0.0f, 1.0f },
+
+    // East face (X = 1)
+    { 1.0f, 0.0f, 0.0f },
+
+    // West face (X = 0)
+    { 0.0f, 1.0f, 0.0f },
+};
+
 static void add_face(int cx, int cz, int bx, int by, int bz, BlockType type, BlockFace face, Mesh& mesh)
 {
-    float ox = chunk_to_world_x(cx, bx);
-    float oy = (float)by;
-    float oz = chunk_to_world_z(cz, bz);
+    double dox, doz;
+    chunk_to_world(cx, cz, bx, bz, dox, doz);
+    glm::vec3 origin((float)dox, (float)by, (float)doz);
     float texture_layer = (float)block_texture_layers[(int)type][(int)face];
 
-    switch (face)
-    {
-        case BlockFace::Top:
-        {
-            glm::vec3 normal(0.0f, 1.0f, 0.0f);
-            add_polygon(
-                {
-                    { { ox + 0.0f, oy + 1.0f, oz + 0.0f }, normal, { 0.0f, 1.0f, texture_layer } },
-                    { { ox + 1.0f, oy + 1.0f, oz + 0.0f }, normal, { 1.0f, 1.0f, texture_layer } },
-                    { { ox + 1.0f, oy + 1.0f, oz - 1.0f }, normal, { 1.0f, 0.0f, texture_layer } },
-                    { { ox + 0.0f, oy + 1.0f, oz - 1.0f }, normal, { 0.0f, 0.0f, texture_layer } }
-                },
-                {
-                    0, 1, 2, 0, 2, 3
-                }, mesh
-            );
-            break;
-        }
-        case BlockFace::Bottom:
-        {
-            glm::vec3 normal(0.0f, -1.0f, 0.0f);
-
-            add_polygon(
-            {
-                { { ox + 0.0f, oy + 0.0f, oz + 0.0f }, normal, { 0.0f, 0.0f, texture_layer } },
-                { { ox + 0.0f, oy + 0.0f, oz - 1.0f }, normal, { 0.0f, 1.0f, texture_layer } },
-                { { ox + 1.0f, oy + 0.0f, oz - 1.0f }, normal, { 1.0f, 1.0f, texture_layer } },
-                { { ox + 1.0f, oy + 0.0f, oz + 0.0f }, normal, { 1.0f, 0.0f, texture_layer } }
-            },
-            {
-                0, 1, 2, 0, 2, 3
-            }, mesh
-            );
-            break;
-        }
-        case BlockFace::North:
-        {
-            glm::vec3 normal(0.0f, 0.0f, -1.0f);
-
-            add_polygon(
-            {
-                { { ox + 0.0f, oy + 1.0f, oz - 1.0f }, normal, { 1.0f, 0.0f, texture_layer } },
-                { { ox + 1.0f, oy + 1.0f, oz - 1.0f }, normal, { 0.0f, 0.0f, texture_layer } },
-                { { ox + 1.0f, oy + 0.0f, oz - 1.0f }, normal, { 0.0f, 1.0f, texture_layer } },
-                { { ox + 0.0f, oy + 0.0f, oz - 1.0f }, normal, { 1.0f, 1.0f, texture_layer } }
-            },
-            {
-                0, 1, 2, 0, 2, 3
-            }, mesh
-            );
-            break;
-        }
-        case BlockFace::East:
-        {
-            glm::vec3 normal(1.0f, 0.0f, 0.0f);
-
-            add_polygon(
-            {
-                { { ox + 1.0f, oy + 1.0f, oz + 0.0f }, normal, { 0.0f, 0.0f, texture_layer } },
-                { { ox + 1.0f, oy + 0.0f, oz + 0.0f }, normal, { 0.0f, 1.0f, texture_layer } },
-                { { ox + 1.0f, oy + 0.0f, oz - 1.0f }, normal, { 1.0f, 1.0f, texture_layer } },
-                { { ox + 1.0f, oy + 1.0f, oz - 1.0f }, normal, { 1.0f, 0.0f, texture_layer } }
-            },
-            {
-                0, 1, 2, 0, 2, 3
-            }, mesh
-            );
-            break;
-        }
-        case BlockFace::South:
-        {
-            glm::vec3 normal(0.0f, 0.0f, 1.0f);
-
-            add_polygon(
-            {
-                { { ox + 0.0f, oy + 1.0f, oz + 0.0f }, normal, { 0.0f, 0.0f, texture_layer } },
-                { { ox + 0.0f, oy + 0.0f, oz + 0.0f }, normal, { 0.0f, 1.0f, texture_layer } },
-                { { ox + 1.0f, oy + 0.0f, oz + 0.0f }, normal, { 1.0f, 1.0f, texture_layer } },
-                { { ox + 1.0f, oy + 1.0f, oz + 0.0f }, normal, { 1.0f, 0.0f, texture_layer } }
-            },
-            {
-                0, 1, 2, 0, 2, 3
-            }, mesh
-            );
-            break;
-        }
-        case BlockFace::West:
-        {
-            glm::vec3 normal(-1.0f, 0.0f, 0.0f);
-
-            add_polygon(
-            {
-                { { ox + 0.0f, oy + 1.0f, oz + 0.0f }, normal, { 1.0f, 0.0f, texture_layer } },
-                { { ox + 0.0f, oy + 1.0f, oz - 1.0f }, normal, { 0.0f, 0.0f, texture_layer } },
-                { { ox + 0.0f, oy + 0.0f, oz - 1.0f }, normal, { 0.0f, 1.0f, texture_layer } },
-                { { ox + 0.0f, oy + 0.0f, oz + 0.0f }, normal, { 1.0f, 1.0f, texture_layer } }
-            },
-            {
-                0, 1, 2, 0, 2, 3
-            }, mesh
-            );
-            break;
-        }
-    }
+    add_polygon({ { origin + unit_cube_face_verts[(int)face][0], unit_cube_face_normals[(int)face], { 0.0f, 0.0f, texture_layer } },
+                  { origin + unit_cube_face_verts[(int)face][1], unit_cube_face_normals[(int)face], { 0.0f, 1.0f, texture_layer } },
+                  { origin + unit_cube_face_verts[(int)face][2], unit_cube_face_normals[(int)face], { 1.0f, 1.0f, texture_layer } },
+                  { origin + unit_cube_face_verts[(int)face][3], unit_cube_face_normals[(int)face], { 1.0f, 0.0f, texture_layer } } },
+                { 0, 1, 2, 0, 2, 3 }, mesh);
 }
-/* clang-format on */
 
 static inline bool is_transparent(BlockType block_type)
 {
@@ -182,27 +113,27 @@ void Chunk::create_mesh()
                 {
                     if (is_transparent(block(bx, by + 1, bz)))
                     {
-                        add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::Top, mesh);
+                        add_face(origin_x, origin_z, bx, by, bz, block_type, BlockFace::Top, mesh);
                     }
                     if (is_transparent(block(bx, by - 1, bz)))
                     {
-                        add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::Bottom, mesh);
-                    }
-                    if (is_transparent(block(bx, by, bz + 1)))
-                    {
-                        add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::North, mesh);
+                        add_face(origin_x, origin_z, bx, by, bz, block_type, BlockFace::Bottom, mesh);
                     }
                     if (is_transparent(block(bx, by, bz - 1)))
                     {
-                        add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::South, mesh);
+                        add_face(origin_x, origin_z, bx, by, bz, block_type, BlockFace::North, mesh);
+                    }
+                    if (is_transparent(block(bx, by, bz + 1)))
+                    {
+                        add_face(origin_x, origin_z, bx, by, bz, block_type, BlockFace::South, mesh);
                     }
                     if (is_transparent(block(bx + 1, by, bz)))
                     {
-                        add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::East, mesh);
+                        add_face(origin_x, origin_z, bx, by, bz, block_type, BlockFace::East, mesh);
                     }
                     if (is_transparent(block(bx - 1, by, bz)))
                     {
-                        add_face(chunk_x, chunk_z, bx, by, bz, block_type, BlockFace::West, mesh);
+                        add_face(origin_x, origin_z, bx, by, bz, block_type, BlockFace::West, mesh);
                     }
                 }
             }
@@ -215,38 +146,74 @@ void Chunk::clear()
     memset(blocks, 0, sizeof(blocks));
 }
 
+float Chunk::get_height(int x, int z)
+{
+    if (in_bounds(x, 0, z))
+    {
+        for (int y = max_height; y > 0; --y)
+        {
+            if (block(x, y - 1, z) != BlockType::Air)
+            {
+                return (float)y;
+            }
+        }
+    }
+
+    return 0.0f;
+}
+
 WorldGen::WorldGen()
 {
     _perlin.SetFrequency(0.005);
     _perlin.SetOctaveCount(3);
 }
 
+float WorldGen::get_height(double x, double z)
+{
+    int cx, cz, bx, bz;
+    world_to_chunk(x, z, cx, cz, bx, bz);
+    return get_chunk(cx, cz).get_height(bx, bz);
+}
+
+Chunk& WorldGen::get_chunk(int chunk_x, int chunk_z)
+{
+    IntCoord pos = { chunk_x, chunk_z };
+    ChunkMap::iterator it = _chunks.find(pos);
+
+    if (it == _chunks.end())
+    {
+        generate_chunk(pos.x, pos.z, _chunks[pos]);
+    }
+
+    return _chunks[pos];
+}
+
 void WorldGen::generate_chunk(int chunk_x, int chunk_z, Chunk& chunk)
 {
     chunk.clear();
-    chunk.chunk_x = chunk_x;
-    chunk.chunk_z = chunk_z;
+    chunk.origin_x = chunk_x;
+    chunk.origin_z = chunk_z;
 
     for (int bz = 0; bz < Chunk::chunk_size; bz++)
     {
         for (int bx = 0; bx < Chunk::chunk_size; bx++)
         {
-            double x = (double)chunk_to_world_x(chunk_x, bx);
-            double z = (double)chunk_to_world_z(chunk_z, bz);
+            double x, z;
+            chunk_to_world(chunk_x, chunk_z, bx, bz, x, z);
             float noise = (float)_perlin.GetValue(x, 1.0, z);
             int height = 64 + (int)(noise * 31.0f);
 
             for (int by = 0; by < height; ++by)
             {
                 BlockType block_type;
-                
+
                 if (by == 0)
                 {
                     block_type = BlockType::Bedrock;
                 }
                 else if (by == height - 1)
                 {
-                block_type = BlockType::Grass;
+                    block_type = BlockType::Grass;
                 }
                 else if (by > height - 8)
                 {

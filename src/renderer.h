@@ -56,7 +56,7 @@ private:
     VulkanBuffer _ubo_buffer;
     VulkanBuffer _index_buffer[25];
     uint32_t _index_count[25];
-    VertexBuffer _vertex_buffer[25];
+    VulkanBuffer _vertex_buffer[25];
     std::vector<VkFramebuffer> _frame_buffers;
     GLFWwindow* _window = nullptr;
     VkInstance _vulkan_instance = VK_NULL_HANDLE;

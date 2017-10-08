@@ -88,9 +88,11 @@ public:
     void clear();
     void create_mesh();
 
+    float get_height(int x, int z);
+
     Mesh mesh;
-    int chunk_x = 0;
-    int chunk_z = 0;
+    int origin_x = 0;
+    int origin_z = 0;
 };
 
 class WorldGen
@@ -98,9 +100,10 @@ class WorldGen
 public:
     WorldGen();
 
-    Chunk& get_chunk(int x, int z);
+    float get_height(double x, double z);
 
-    void generate_chunk(int chunk_x, int chunk_y, Chunk& chunk);
+    Chunk& get_chunk(int chunk_x, int chunk_z);
+    void generate_chunk(int chunk_x, int chunk_z, Chunk& chunk);
 
 private:
     noise::module::Perlin _perlin;
@@ -110,6 +113,28 @@ private:
         int x, z;
     };
     
-    typedef std::map<IntCoord, Chunk> ChunkMap;
-    ChunkMap chunks;
+    struct IntCoordCompare
+    {
+        bool operator()(const IntCoord& a, const IntCoord& b) const
+        {
+            return (a.x != b.x) ? (a.x < b.x) : (a.z < b.z);
+        }
+    };
+
+    typedef std::map<IntCoord, Chunk, IntCoordCompare> ChunkMap;
+    ChunkMap _chunks;
 };
+
+inline void world_to_chunk(double world_x, double world_z, int& chunk_x, int& chunk_z, int& block_x, int& block_z)
+{
+    chunk_x = (int)floor(world_x / (double)Chunk::chunk_size);
+    chunk_z = (int)floor(world_z / (double)Chunk::chunk_size);
+    block_x = (int)floor(world_x - chunk_x * (double)Chunk::chunk_size);
+    block_z = (int)floor(world_z - chunk_z * (double)Chunk::chunk_size);
+}
+
+inline void chunk_to_world(int chunk_x, int chunk_z, int block_x, int block_z, double& world_x, double& world_z)
+{
+    world_x = chunk_x * Chunk::chunk_size + block_x;
+    world_z = chunk_z * Chunk::chunk_size + block_z;
+}

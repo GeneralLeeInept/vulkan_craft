@@ -36,6 +36,7 @@ Renderer _renderer;
 Camera _camera;
 float _mouse_x;
 float _mouse_y;
+WorldGen _world_gen;
 
 void poll_mouse(GLFWwindow* window, float& x, float& y)
 {
@@ -112,6 +113,9 @@ void run_game(GLFWwindow* window)
         prev_time = current_time;
 
         update_input(window, delta);
+
+        float height = _world_gen.get_height(_camera.position.x, _camera.position.z);
+        _camera.position.y = height + 1.8f;
 
         _renderer.set_view_matrix(_camera.get_view_matrix());
 

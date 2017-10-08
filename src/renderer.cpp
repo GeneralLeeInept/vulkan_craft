@@ -464,26 +464,25 @@ bool Renderer::create_frame_buffers()
 
 bool Renderer::create_graphics_pipeline()
 {
-    return _graphics_pipeline_factory.create_pipeline(_graphics_pipeline);
-}
-
-bool Renderer::create_vertex_buffer()
-{
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) },
                                { 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), sizeof(glm::vec3) },
                                { 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tex_coord), sizeof(glm::vec3) } };
 
     _graphics_pipeline_factory.set_vertex_decl(decl);
 
-    WorldGen gen;
+    return _graphics_pipeline_factory.create_pipeline(_graphics_pipeline);
+}
 
+extern WorldGen _world_gen;
+
+bool Renderer::create_vertex_buffer()
+{
     for (int cz = 0; cz < 5; ++cz)
     {
         for (int cx = 0; cx < 5; ++cx)
         {
             int i = cz * 5 + cx;
-            Chunk chunk;
-            gen.generate_chunk(cx - 2, cz - 2, chunk);
+            Chunk& chunk = _world_gen.get_chunk(cx - 2, cz - 2);
             chunk.create_mesh();
             Mesh& mesh = chunk.mesh;
 
@@ -491,7 +490,8 @@ bool Renderer::create_vertex_buffer()
 
             if (_index_count[i] > 0)
             {
-                if (!_vertex_buffer[i].create(_device, decl, (uint32_t)mesh.vertices.size()))
+                if (!_vertex_buffer[i].create(_device, sizeof(Vertex) * (uint32_t)mesh.vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
                 {
                     return false;
                 }
@@ -507,7 +507,7 @@ bool Renderer::create_vertex_buffer()
                 _vertex_buffer[i].unmap();
 
                 if (!_index_buffer[i].create(_device, sizeof(uint32_t) * mesh.indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
                 {
                     return false;
                 }
