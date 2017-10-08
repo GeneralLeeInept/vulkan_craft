@@ -2,6 +2,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include "culling.h"
 #include "depth_buffer.h"
 #include "graphics_pipeline.h"
 #include "render_pass.h"
@@ -87,6 +88,8 @@ private:
         VkBuffer index_buffer = VK_NULL_HANDLE;
         VkDeviceMemory memory = VK_NULL_HANDLE;
         uint32_t index_count = 0;
+
+        geometry::aabb _aabb;
     };
 
     std::vector<RenderMesh> _meshes;

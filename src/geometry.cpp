@@ -141,6 +141,12 @@ void Chunk::create_mesh()
             }
         }
     }
+
+    double dox, doz;
+    chunk_to_world(origin_x, origin_z, 0, 0, dox, doz);
+    glm::vec3 a = glm::vec3((float)dox, 0.0f, (float)doz);
+    glm::vec3 b = a + glm::vec3((float)chunk_size, (float)max_height, (float)chunk_size);
+    mesh.aabb.set_from_corners(a, b);
 }
 
 void Chunk::clear()

@@ -73,6 +73,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\culling.cpp" />
     <ClCompile Include="..\src\depth_buffer.cpp" />
     <ClCompile Include="..\src\geometry.cpp" />
     <ClCompile Include="..\src\graphics_pipeline.cpp" />
@@ -97,6 +98,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\camera.h" />
+    <ClInclude Include="..\src\culling.h" />
     <ClInclude Include="..\src\depth_buffer.h" />
     <ClInclude Include="..\src\file.h" />
     <ClInclude Include="..\src\geometry.h" />

@@ -219,6 +219,7 @@ Renderer::RenderMesh::RenderMesh(RenderMesh&& other)
     vertex_buffer = other.vertex_buffer;
     index_count = other.index_count;
     memory = other.memory;
+    _aabb = other._aabb;
     memset(&other, 0, sizeof(RenderMesh));
 }
 
@@ -321,6 +322,8 @@ bool Renderer::add_mesh(const Mesh& mesh)
         return false;
     }
 
+    render_mesh._aabb = mesh.aabb;
+
     staging_buffer.destroy();
 
     _meshes.push_back(std::move(render_mesh));
@@ -378,8 +381,16 @@ bool Renderer::draw_frame()
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)_graphics_pipeline, 0, 1, &_descriptor_set, 0,
                             nullptr);
 
+    geometry::frustum f;
+    f.set_from_matrix(_ubo_data.proj * _ubo_data.view);
     for (const RenderMesh& mesh : _meshes)
     {
+        if (culling::cull(f, mesh._aabb))
+        {
+            // FIXME: Culling is busted (culling frustum extraction)
+            continue;
+        }
+
         VkDeviceSize offsets = 0;
         vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh.vertex_buffer, &offsets);
         vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer, 0, VK_INDEX_TYPE_UINT32);

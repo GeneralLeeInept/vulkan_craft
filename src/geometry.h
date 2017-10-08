@@ -6,6 +6,8 @@
 #include <map>
 #include <vector>
 
+#include "culling.h"
+
 struct Vertex
 {
     glm::vec3 position;
@@ -17,6 +19,7 @@ struct Mesh
 {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
+    geometry::aabb aabb;
 };
 
 enum class BlockFace : uint8_t

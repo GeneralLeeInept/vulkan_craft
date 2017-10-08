@@ -54,6 +54,9 @@
     <ClCompile Include="..\src\geometry.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\culling.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.h">
@@ -99,6 +102,9 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="..\src\camera.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\culling.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
