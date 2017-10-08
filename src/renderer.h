@@ -30,6 +30,7 @@ public:
     void set_model_matrix(glm::mat4x4& m) { _ubo_data.model = m; }
     void set_view_matrix(glm::mat4x4& m) { _ubo_data.view = m; }
     void set_proj_matrix(glm::mat4x4& m) { _ubo_data.proj = m; }
+    bool add_mesh(const struct Mesh& mesh);
 
     bool draw_frame();
 
@@ -40,8 +41,9 @@ private:
     bool create_device();
     bool create_semaphores();
     bool create_frame_buffers();
+    bool create_command_buffers(uint32_t count);
+    bool create_fences(uint32_t count);
     bool create_graphics_pipeline();
-    bool create_vertex_buffer();
     bool create_descriptor_set_layout();
     bool create_descriptor_set();
     bool create_ubo();
@@ -54,10 +56,9 @@ private:
     GraphicsPipelineFactory _graphics_pipeline_factory;
     GraphicsPipeline _graphics_pipeline;
     VulkanBuffer _ubo_buffer;
-    VulkanBuffer _index_buffer[25];
-    uint32_t _index_count[25];
-    VulkanBuffer _vertex_buffer[25];
     std::vector<VkFramebuffer> _frame_buffers;
+    std::vector<VkCommandBuffer> _command_buffers;
+    std::vector<VkFence> _frame_fences;
     GLFWwindow* _window = nullptr;
     VkInstance _vulkan_instance = VK_NULL_HANDLE;
     VkDebugReportCallbackEXT _debug_report = VK_NULL_HANDLE;
@@ -73,6 +74,22 @@ private:
     VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
 
     TextureArray _textures;
+
+    class RenderMesh
+    {
+    public:
+        RenderMesh(VkDevice device);
+        RenderMesh(RenderMesh&& other);
+        ~RenderMesh();
+
+        VkDevice device = VK_NULL_HANDLE;
+        VkBuffer vertex_buffer = VK_NULL_HANDLE;
+        VkBuffer index_buffer = VK_NULL_HANDLE;
+        VkDeviceMemory memory = VK_NULL_HANDLE;
+        uint32_t index_count = 0;
+    };
+
+    std::vector<RenderMesh> _meshes;
 
     bool _valid_state = false;
 };

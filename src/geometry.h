@@ -52,7 +52,7 @@ enum class BlockType : uint8_t
 class Chunk
 {
 public:
-    static const int chunk_size = 16;
+    static const int chunk_size = 64;
     static const int max_height = 256;
 
     BlockType blocks[chunk_size * chunk_size * max_height];
@@ -95,18 +95,23 @@ public:
     int origin_z = 0;
 };
 
+class Renderer;
+
 class WorldGen
 {
 public:
-    WorldGen();
+    WorldGen(Renderer& renderer);
 
     float get_height(double x, double z);
 
     Chunk& get_chunk(int chunk_x, int chunk_z);
-    void generate_chunk(int chunk_x, int chunk_z, Chunk& chunk);
+    void generate_around(double x, double z, int radius);
 
 private:
+    void generate_chunk(int chunk_x, int chunk_z);
+
     noise::module::Perlin _perlin;
+    Renderer& _renderer;
 
     struct IntCoord
     {
@@ -125,10 +130,15 @@ private:
     ChunkMap _chunks;
 };
 
-inline void world_to_chunk(double world_x, double world_z, int& chunk_x, int& chunk_z, int& block_x, int& block_z)
+inline void world_to_chunk(double world_x, double world_z, int& chunk_x, int& chunk_z)
 {
     chunk_x = (int)floor(world_x / (double)Chunk::chunk_size);
     chunk_z = (int)floor(world_z / (double)Chunk::chunk_size);
+}
+
+inline void world_to_chunk(double world_x, double world_z, int& chunk_x, int& chunk_z, int& block_x, int& block_z)
+{
+    world_to_chunk(world_x, world_z, chunk_x, chunk_z);
     block_x = (int)floor(world_x - chunk_x * (double)Chunk::chunk_size);
     block_z = (int)floor(world_z - chunk_z * (double)Chunk::chunk_size);
 }

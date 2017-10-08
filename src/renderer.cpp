@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include <GLFW/glfw3.h>
+
 #include <sstream>
 #include <vector>
 
@@ -33,7 +34,7 @@ bool Renderer::initialise(GLFWwindow* window)
         return false;
     }
 
-    if (!_device.create_command_pool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, _command_pool))
+    if (!_device.create_command_pool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, _command_pool))
     {
         return false;
     }
@@ -65,11 +66,6 @@ bool Renderer::initialise(GLFWwindow* window)
 
     _graphics_pipeline_factory.set_shader(VK_SHADER_STAGE_VERTEX_BIT, _vertex_shader, "main");
     _graphics_pipeline_factory.set_shader(VK_SHADER_STAGE_FRAGMENT_BIT, _fragment_shader, "main");
-
-    if (!create_vertex_buffer())
-    {
-        return false;
-    }
 
     if (!_textures.create(_device, L"res/textures"))
     {
@@ -124,11 +120,7 @@ void Renderer::shutdown()
         vkDestroyDescriptorSetLayout((VkDevice)_device, _descriptor_set_layout, nullptr);
     }
 
-    for (int i = 0; i < 25; ++i)
-    {
-        _index_buffer[i].destroy();
-        _vertex_buffer[i].destroy();
-    }
+    _meshes.clear();
 
     _depth_buffer.destroy();
     _swapchain.destroy();
@@ -177,6 +169,18 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
             return false;
         }
 
+        uint32_t swapchain_image_count = (uint32_t)_swapchain.get_image_views().size();
+
+        if (!create_command_buffers(swapchain_image_count))
+        {
+            return false;
+        }
+
+        if (!create_fences(swapchain_image_count))
+        {
+            return false;
+        }
+
         if (!_depth_buffer.create())
         {
             return false;
@@ -203,6 +207,106 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
     return true;
 }
 
+Renderer::RenderMesh::RenderMesh(VkDevice device)
+    : device(device)
+{
+}
+
+Renderer::RenderMesh::RenderMesh(RenderMesh&& other)
+{
+    device = other.device;
+    index_buffer = other.index_buffer;
+    vertex_buffer = other.vertex_buffer;
+    index_count = other.index_count;
+    memory = other.memory;
+    memset(&other, 0, sizeof(RenderMesh));
+}
+
+Renderer::RenderMesh::~RenderMesh()
+{
+    if (index_buffer)
+    {
+        vkDestroyBuffer(device, index_buffer, nullptr);
+    }
+
+    if (vertex_buffer)
+    {
+        vkDestroyBuffer(device, vertex_buffer, nullptr);
+    }
+
+    if (memory)
+    {
+        vkFreeMemory(device, memory, nullptr);
+    }
+}
+
+bool Renderer::add_mesh(const Mesh& mesh)
+{
+    uint32_t vertex_count = (uint32_t)mesh.vertices.size();
+
+    if (vertex_count == 0)
+    {
+        return true;
+    }
+
+    RenderMesh render_mesh((VkDevice)_device);
+    render_mesh.index_count = (uint32_t)mesh.indices.size();
+
+    if (render_mesh.index_count == 0)
+    {
+        return true;
+    }
+
+    VkBufferCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = vertex_count * sizeof(mesh.vertices[0]);
+    create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VK_CHECK_RESULT(vkCreateBuffer((VkDevice)_device, &create_info, nullptr, &render_mesh.vertex_buffer));
+
+    create_info.size = render_mesh.index_count * sizeof(mesh.indices[0]);
+    create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VK_CHECK_RESULT(vkCreateBuffer((VkDevice)_device, &create_info, nullptr, &render_mesh.index_buffer));
+
+    VkMemoryRequirements vertex_memory_requirements;
+    vkGetBufferMemoryRequirements((VkDevice)_device, render_mesh.vertex_buffer, &vertex_memory_requirements);
+
+    VkMemoryRequirements index_memory_requirements;
+    vkGetBufferMemoryRequirements((VkDevice)_device, render_mesh.index_buffer, &index_memory_requirements);
+
+    VkMemoryRequirements memory_requirements;
+    memory_requirements.alignment = max(vertex_memory_requirements.alignment, index_memory_requirements.alignment);
+    VkDeviceSize index_data_offset = (vertex_memory_requirements.size + index_memory_requirements.alignment - 1) & ~(index_memory_requirements.alignment - 1); // TODO: Fail on non-power of 2 alignments (like that would ever happen?)
+    memory_requirements.size = index_data_offset + index_memory_requirements.size;
+    memory_requirements.memoryTypeBits = vertex_memory_requirements.memoryTypeBits & index_memory_requirements.memoryTypeBits;
+
+    if (memory_requirements.memoryTypeBits == 0)
+    {
+        return false;
+    }
+
+    VkDeviceSize offset;
+    if (!_device.allocate_memory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memory_requirements, render_mesh.memory, offset))
+    {
+        return false;
+    }
+
+    VK_CHECK_RESULT(vkBindBufferMemory((VkDevice)_device, render_mesh.vertex_buffer, render_mesh.memory, offset));
+    VK_CHECK_RESULT(vkBindBufferMemory((VkDevice)_device, render_mesh.index_buffer, render_mesh.memory, offset + index_data_offset));
+
+    uint8_t* memory;
+    VK_CHECK_RESULT(vkMapMemory((VkDevice)_device, render_mesh.memory, offset, memory_requirements.size, 0, (void**)&memory));
+
+    memcpy(memory, mesh.vertices.data(), sizeof(mesh.vertices[0]) * mesh.vertices.size());
+    memcpy(memory + index_data_offset, mesh.indices.data(), sizeof(mesh.indices[0]) * mesh.indices.size());
+    vkUnmapMemory((VkDevice)_device, render_mesh.memory);
+
+    _meshes.push_back(std::move(render_mesh));
+
+    return true;
+}
+
 bool Renderer::draw_frame()
 {
     if (!_valid_state)
@@ -215,6 +319,8 @@ bool Renderer::draw_frame()
         return false;
     }
 
+    uint32_t swapchain_image_index = _swapchain.get_acquired_image_index();
+
     void* data;
     if (!_ubo_buffer.map(&data))
     {
@@ -223,15 +329,11 @@ bool Renderer::draw_frame()
     memcpy(data, &_ubo_data, sizeof(UBO));
     _ubo_buffer.unmap();
 
-    VkCommandBufferAllocateInfo alloc_info = {};
-    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = _command_pool;
-    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = 1;
+    VkFence frame_fence = _frame_fences[swapchain_image_index];
+    VK_CHECK_RESULT(vkWaitForFences((VkDevice)_device, 1, &frame_fence, VK_TRUE, UINT64_MAX));
+    VK_CHECK_RESULT(vkResetFences((VkDevice)_device, 1, &frame_fence));
 
-    VkCommandBuffer command_buffer;
-    VK_CHECK_RESULT(vkAllocateCommandBuffers((VkDevice)_device, &alloc_info, &command_buffer));
-
+    VkCommandBuffer command_buffer = _command_buffers[swapchain_image_index];
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -243,7 +345,7 @@ bool Renderer::draw_frame()
     VkRenderPassBeginInfo render_pass_begin_info = {};
     render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_begin_info.renderPass = (VkRenderPass)_render_pass;
-    render_pass_begin_info.framebuffer = _frame_buffers[_swapchain.get_acquired_image_index()];
+    render_pass_begin_info.framebuffer = _frame_buffers[swapchain_image_index];
     render_pass_begin_info.renderArea.offset = { 0, 0 };
     render_pass_begin_info.renderArea.extent = _swapchain.get_extent();
     render_pass_begin_info.clearValueCount = 2;
@@ -255,16 +357,12 @@ bool Renderer::draw_frame()
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)_graphics_pipeline, 0, 1, &_descriptor_set, 0,
                             nullptr);
 
-    for (int i = 0; i < 25; ++i)
+    for (const RenderMesh& mesh : _meshes)
     {
-        if (_index_count[i] > 0)
-        {
-            VkBuffer vertex_buffer = (VkBuffer)_vertex_buffer[i];
-            VkDeviceSize offsets = 0;
-            vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer, &offsets);
-            vkCmdBindIndexBuffer(command_buffer, (VkBuffer)_index_buffer[i], 0, VK_INDEX_TYPE_UINT32);
-            vkCmdDrawIndexed(command_buffer, _index_count[i], 1, 0, 0, 0);
-        }
+        VkDeviceSize offsets = 0;
+        vkCmdBindVertexBuffers(command_buffer, 0, 1, &mesh.vertex_buffer, &offsets);
+        vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(command_buffer, mesh.index_count, 1, 0, 0, 0);
     }
 
     vkCmdEndRenderPass(command_buffer);
@@ -273,7 +371,7 @@ bool Renderer::draw_frame()
 
     VkSemaphore image_acquired_semaphore = _swapchain.get_image_acquired_semaphore();
     VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    _device.submit(command_buffer, 1, &image_acquired_semaphore, &wait_stage_mask, 1, &_drawing_complete_semaphore);
+    _device.submit(command_buffer, 1, &image_acquired_semaphore, &wait_stage_mask, 1, &_drawing_complete_semaphore, frame_fence);
 
     if (!_swapchain.end_frame(1, &_drawing_complete_semaphore))
     {
@@ -302,12 +400,26 @@ void Renderer::invalidate()
 
         vkDeviceWaitIdle((VkDevice)_device);
 
+        for (VkFence& fence : _frame_fences)
+        {
+            vkDestroyFence((VkDevice)_device, fence, nullptr);
+        }
+
+        _frame_fences.clear();
+
         for (VkFramebuffer& framebuffer : _frame_buffers)
         {
             vkDestroyFramebuffer((VkDevice)_device, framebuffer, nullptr);
         }
 
         _frame_buffers.clear();
+
+        if (_command_buffers.size())
+        {
+            vkFreeCommandBuffers((VkDevice)_device, _command_pool, (uint32_t)_command_buffers.size(), _command_buffers.data());
+            _command_buffers.clear();
+        }
+
         _graphics_pipeline.invalidate();
         _render_pass.invalidate();
         _depth_buffer.invalidate();
@@ -462,6 +574,35 @@ bool Renderer::create_frame_buffers()
     return true;
 }
 
+bool Renderer::create_command_buffers(uint32_t count)
+{
+    _command_buffers.resize(count);
+
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.commandPool = _command_pool;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandBufferCount = count;
+    VK_CHECK_RESULT(vkAllocateCommandBuffers((VkDevice)_device, &alloc_info, _command_buffers.data()));
+    return true;
+}
+
+bool Renderer::create_fences(uint32_t count)
+{
+    _frame_fences.resize(count);
+
+    VkFenceCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (VkFence& fence : _frame_fences)
+    {
+        VK_CHECK_RESULT(vkCreateFence((VkDevice)_device, &create_info, nullptr, &fence));
+    }
+
+    return true;
+}
+
 bool Renderer::create_graphics_pipeline()
 {
     static VertexDecl decl = { { 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position), sizeof(glm::vec3) },
@@ -471,59 +612,6 @@ bool Renderer::create_graphics_pipeline()
     _graphics_pipeline_factory.set_vertex_decl(decl);
 
     return _graphics_pipeline_factory.create_pipeline(_graphics_pipeline);
-}
-
-extern WorldGen _world_gen;
-
-bool Renderer::create_vertex_buffer()
-{
-    for (int cz = 0; cz < 5; ++cz)
-    {
-        for (int cx = 0; cx < 5; ++cx)
-        {
-            int i = cz * 5 + cx;
-            Chunk& chunk = _world_gen.get_chunk(cx - 2, cz - 2);
-            chunk.create_mesh();
-            Mesh& mesh = chunk.mesh;
-
-            _index_count[i] = (uint32_t)mesh.indices.size();
-
-            if (_index_count[i] > 0)
-            {
-                if (!_vertex_buffer[i].create(_device, sizeof(Vertex) * (uint32_t)mesh.vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-                {
-                    return false;
-                }
-
-                void* memory;
-
-                if (!_vertex_buffer[i].map((void**)&memory))
-                {
-                    return false;
-                }
-
-                memcpy(memory, mesh.vertices.data(), sizeof(Vertex) * mesh.vertices.size());
-                _vertex_buffer[i].unmap();
-
-                if (!_index_buffer[i].create(_device, sizeof(uint32_t) * mesh.indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-                {
-                    return false;
-                }
-
-                if (!_index_buffer[i].map(&memory))
-                {
-                    return false;
-                }
-
-                memcpy(memory, mesh.indices.data(), sizeof(uint32_t) * _index_count[i]);
-                _index_buffer[i].unmap();
-            }
-        }
-    }
-
-    return true;
 }
 
 bool Renderer::create_descriptor_set_layout()

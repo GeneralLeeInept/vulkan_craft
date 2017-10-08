@@ -41,7 +41,7 @@ public:
     bool allocate_memory(VkMemoryPropertyFlags properties, VkMemoryRequirements requirements, VkDeviceMemory& memory, VkDeviceSize& offset);
 
     void submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores, const VkPipelineStageFlags* wait_stage_mask,
-                uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores);
+                uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores, VkFence fence);
 
     VkCommandBuffer begin_one_time_commands();
     bool upload_texture(Texture& texture);

@@ -228,7 +228,7 @@ bool VulkanDevice::allocate_memory(VkMemoryPropertyFlags properties, VkMemoryReq
 }
 
 void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count, VkSemaphore* wait_semaphores,
-                          const VkPipelineStageFlags* wait_stage_mask, uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores)
+                          const VkPipelineStageFlags* wait_stage_mask, uint32_t signal_semaphore_count, VkSemaphore* signal_semaphores, VkFence fence)
 {
     VkSubmitInfo submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -239,7 +239,7 @@ void VulkanDevice::submit(VkCommandBuffer buffer, uint32_t wait_semaphore_count,
     submit_info.pCommandBuffers = &buffer;
     submit_info.signalSemaphoreCount = signal_semaphore_count;
     submit_info.pSignalSemaphores = signal_semaphores;
-    vkQueueSubmit(_graphics_queue, 1, &submit_info, nullptr);
+    vkQueueSubmit(_graphics_queue, 1, &submit_info, fence);
 }
 
 VkCommandBuffer VulkanDevice::begin_one_time_commands()
@@ -324,7 +324,7 @@ bool VulkanDevice::upload_texture(Texture& texture)
 
     VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
 
-    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr);
+    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr, VK_NULL_HANDLE);
 
     return true;
 }
@@ -386,7 +386,7 @@ bool VulkanDevice::upload_texture(TextureArray& texture_array)
 
     VK_CHECK_RESULT(vkEndCommandBuffer(command_buffer));
 
-    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr);
+    submit(command_buffer, 0, nullptr, nullptr, 0, nullptr, VK_NULL_HANDLE);
 
     return true;
 }

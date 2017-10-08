@@ -2,6 +2,8 @@
 
 #include <noise.h>
 
+#include "renderer.h"
+
 static int block_texture_layers[][6] = {
     { 0, 0, 0, 0, 0, 0 },       // Air
     { 0, 0, 0, 0, 0, 0 },       // Bedrock
@@ -162,7 +164,8 @@ float Chunk::get_height(int x, int z)
     return 0.0f;
 }
 
-WorldGen::WorldGen()
+WorldGen::WorldGen(Renderer& renderer)
+    : _renderer(renderer)
 {
     _perlin.SetFrequency(0.005);
     _perlin.SetOctaveCount(3);
@@ -182,14 +185,16 @@ Chunk& WorldGen::get_chunk(int chunk_x, int chunk_z)
 
     if (it == _chunks.end())
     {
-        generate_chunk(pos.x, pos.z, _chunks[pos]);
+        generate_chunk(pos.x, pos.z);
     }
 
     return _chunks[pos];
 }
 
-void WorldGen::generate_chunk(int chunk_x, int chunk_z, Chunk& chunk)
+void WorldGen::generate_chunk(int chunk_x, int chunk_z)
 {
+    IntCoord pos = { chunk_x, chunk_z };
+    Chunk& chunk = _chunks[pos];
     chunk.clear();
     chunk.origin_x = chunk_x;
     chunk.origin_z = chunk_z;
@@ -226,6 +231,23 @@ void WorldGen::generate_chunk(int chunk_x, int chunk_z, Chunk& chunk)
 
                 chunk.set_block(bx, by, bz, block_type);
             }
+        }
+    }
+
+    chunk.create_mesh();
+    _renderer.add_mesh(chunk.mesh);
+}
+
+void WorldGen::generate_around(double x, double z, int radius)
+{
+    int cx, cz;
+    world_to_chunk(x, z, cx, cz);
+
+    for (int z = -radius; z <= radius; ++z)
+    {
+        for (int x = -radius; x <= radius; ++x)
+        {
+            get_chunk(cx + x, cz + z);
         }
     }
 }
