@@ -387,7 +387,7 @@ bool Renderer::draw_frame()
     {
         if (culling::cull(f, mesh._aabb))
         {
-            //continue;
+            continue;
         }
 
         VkDeviceSize offsets = 0;

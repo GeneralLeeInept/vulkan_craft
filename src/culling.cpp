@@ -31,7 +31,10 @@ bool cull(const geometry::frustum& frustum, const geometry::aabb& aabb)
 
     for (const geometry::plane& plane : frustum.planes)
     {
-        if ((glm::dot(plane.n, a) + plane.d) > 0 && (glm::dot(plane.n, b) + plane.d) > 0)
+        float plane_to_a = glm::dot(plane.n, a) + plane.d;
+        float plane_to_b = glm::dot(plane.n, b) + plane.d;
+
+        if (plane_to_a > 0 && plane_to_b > 0)
         {
             return true;
         }

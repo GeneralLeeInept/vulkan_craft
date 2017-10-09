@@ -104,6 +104,9 @@ void run_game(GLFWwindow* window)
 
     float prev_time = (float)glfwGetTime();
 
+    _world_gen.generate_around(0.0, 0.0, 2);
+    poll_mouse(window, _mouse_x, _mouse_y);
+
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
