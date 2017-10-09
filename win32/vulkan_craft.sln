@@ -9,42 +9,64 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glfw", "..\deps\glfw-3.2.1\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deps", "deps", "{58CD7C3B-506D-4AC9-8496-519EB09ADFD6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libnoise", "..\..\..\external\libnoise-1.0.0\noise\vs2015\libnoise.vcxproj", "{5D2C39B9-CA32-4080-8A78-0808D4DA7818}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libnoise", "..\deps\libnoise-1.0.0\noise\vs2015\libnoise.vcxproj", "{5D2C39B9-CA32-4080-8A78-0808D4DA7818}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		MinSizeRel|x64 = MinSizeRel|x64
+		MinSizeRel|x86 = MinSizeRel|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		RelWithDebInfo|x64 = RelWithDebInfo|x64
+		RelWithDebInfo|x86 = RelWithDebInfo|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.Debug|x64.ActiveCfg = Debug|x64
 		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.Debug|x64.Build.0 = Debug|x64
 		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.Debug|x86.ActiveCfg = Debug|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.MinSizeRel|x64.ActiveCfg = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.MinSizeRel|x64.Build.0 = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.MinSizeRel|x86.ActiveCfg = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.MinSizeRel|x86.Build.0 = Release|x64
 		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.Release|x64.ActiveCfg = Release|x64
 		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.Release|x64.Build.0 = Release|x64
 		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.Release|x86.ActiveCfg = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.RelWithDebInfo|x64.Build.0 = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.RelWithDebInfo|x86.ActiveCfg = Release|x64
+		{BD343EBF-0CA3-49C5-AE28-2541AF9C77CB}.RelWithDebInfo|x86.Build.0 = Release|x64
 		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.Debug|x64.ActiveCfg = Debug|x64
 		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.Debug|x64.Build.0 = Debug|x64
 		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.Debug|x86.ActiveCfg = Debug|x64
+		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.MinSizeRel|x86.ActiveCfg = MinSizeRel|x64
 		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.Release|x64.ActiveCfg = Release|x64
 		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.Release|x64.Build.0 = Release|x64
 		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.Release|x86.ActiveCfg = Release|x64
+		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{6346EF12-9A2D-3B45-B082-D05823B7F13C}.RelWithDebInfo|x86.ActiveCfg = RelWithDebInfo|x64
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Debug|x64.ActiveCfg = Debug|x64
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Debug|x64.Build.0 = Debug|x64
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Debug|x86.ActiveCfg = Debug|Win32
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Debug|x86.Build.0 = Debug|Win32
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.MinSizeRel|x64.ActiveCfg = Release|x64
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.MinSizeRel|x64.Build.0 = Release|x64
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.MinSizeRel|x86.ActiveCfg = Release|Win32
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.MinSizeRel|x86.Build.0 = Release|Win32
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Release|x64.ActiveCfg = Release|x64
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Release|x64.Build.0 = Release|x64
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Release|x86.ActiveCfg = Release|Win32
 		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.Release|x86.Build.0 = Release|Win32
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.RelWithDebInfo|x64.Build.0 = Release|x64
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.RelWithDebInfo|x86.ActiveCfg = Release|Win32
+		{5D2C39B9-CA32-4080-8A78-0808D4DA7818}.RelWithDebInfo|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{6346EF12-9A2D-3B45-B082-D05823B7F13C} = {58CD7C3B-506D-4AC9-8496-519EB09ADFD6}
-		{5D2C39B9-CA32-4080-8A78-0808D4DA7818} = {58CD7C3B-506D-4AC9-8496-519EB09ADFD6}
 	EndGlobalSection
 EndGlobal

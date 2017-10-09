@@ -387,8 +387,7 @@ bool Renderer::draw_frame()
     {
         if (culling::cull(f, mesh._aabb))
         {
-            // FIXME: Culling is busted (culling frustum extraction)
-            continue;
+            //continue;
         }
 
         VkDeviceSize offsets = 0;

@@ -89,11 +89,11 @@
     <ClCompile Include="..\src\vulkan_swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\external\libnoise-1.0.0\noise\vs2015\libnoise.vcxproj">
-      <Project>{5d2c39b9-ca32-4080-8a78-0808d4da7818}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\deps\glfw-3.2.1\glfw-build\src\glfw.vcxproj">
       <Project>{6346ef12-9a2d-3b45-b082-d05823b7f13c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\deps\libnoise-1.0.0\noise\vs2015\libnoise.vcxproj">
+      <Project>{5d2c39b9-ca32-4080-8a78-0808d4da7818}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
