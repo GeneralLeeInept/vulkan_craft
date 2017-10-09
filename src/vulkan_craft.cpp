@@ -86,6 +86,8 @@ void update_input(GLFWwindow* window, float delta)
     }
 }
 
+extern bool UpdateClipFrustum;
+
 void run_game(GLFWwindow* window)
 {
     if (!window)
@@ -107,6 +109,8 @@ void run_game(GLFWwindow* window)
     _world_gen.generate_around(0.0, 0.0, 2);
     poll_mouse(window, _mouse_x, _mouse_y);
 
+    int p_state = glfwGetKey(window, GLFW_KEY_P);
+
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -115,7 +119,16 @@ void run_game(GLFWwindow* window)
         float delta = current_time - prev_time;
         prev_time = current_time;
 
-        update_input(window, delta);
+        update_input(window, /*delta*/1.0f / 60.0f);
+
+        if (glfwGetKey(window, GLFW_KEY_P) != p_state)
+        {
+            p_state = glfwGetKey(window, GLFW_KEY_P);
+            if (p_state == GLFW_PRESS)
+            {
+                UpdateClipFrustum = !UpdateClipFrustum;
+            }
+        }
 
         _world_gen.generate_around(_camera.position.x, _camera.position.z, 2);
         float height = _world_gen.get_height(_camera.position.x, _camera.position.z) + 1.8f;
@@ -143,7 +156,7 @@ void set_window_size(GLFWwindow* window, int width, int height)
 {
     if (width && height)
     {
-        glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.5f, 100.0f);
+        glm::mat4x4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.25f, 200.0f);
         proj[1] *= -1.0f;
         _renderer.set_proj_matrix(proj);
         poll_mouse(window, _mouse_x, _mouse_y);

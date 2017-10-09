@@ -331,6 +331,9 @@ bool Renderer::add_mesh(const Mesh& mesh)
     return true;
 }
 
+geometry::frustum _clip_frustum;
+bool UpdateClipFrustum = true;
+
 bool Renderer::draw_frame()
 {
     if (!_valid_state)
@@ -381,11 +384,14 @@ bool Renderer::draw_frame()
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)_graphics_pipeline, 0, 1, &_descriptor_set, 0,
                             nullptr);
 
-    geometry::frustum f;
-    f.set_from_matrix(_ubo_data.proj * _ubo_data.view);
+    if (UpdateClipFrustum)
+    {
+        _clip_frustum.set_from_matrix(_ubo_data.proj * _ubo_data.view * _ubo_data.model);
+    }
+
     for (const RenderMesh& mesh : _meshes)
     {
-        if (culling::cull(f, mesh._aabb))
+        if (culling::cull(_clip_frustum, mesh._aabb))
         {
             continue;
         }

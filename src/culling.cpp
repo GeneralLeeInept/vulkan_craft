@@ -11,30 +11,24 @@ void aabb::set_from_corners(const glm::vec3& a, const glm::vec3& b)
     center = (a + b) * 0.5f;
 }
 
-void frustum::set_from_matrix(const glm::mat4x4& proj)
+void frustum::set_from_matrix(const glm::mat4x4& m)
 {
-    planes[0] = { { proj[0].w - proj[0].x, proj[1].w - proj[1].x, proj[2].w - proj[2].x }, proj[3].w - proj[3].x };
-    planes[1] = { { proj[0].w + proj[0].x, proj[1].w + proj[1].x, proj[2].w + proj[2].x }, proj[3].w + proj[3].x };
-    planes[2] = { { proj[0].w - proj[0].y, proj[1].w - proj[1].y, proj[2].w - proj[2].y }, proj[3].w - proj[3].y };
-    planes[3] = { { proj[0].w + proj[0].y, proj[1].w + proj[1].y, proj[2].w + proj[2].y }, proj[3].w + proj[3].y };
-    planes[4] = { { proj[0].w - proj[0].z, proj[1].w - proj[1].z, proj[2].w - proj[2].z }, proj[3].w - proj[3].z };
-    planes[5] = { { proj[0].w + proj[0].z, proj[1].w + proj[1].z, proj[2].w + proj[2].z }, proj[3].w + proj[3].z };
+    planes[0] = { { m[0][3] - m[0][0], m[1][3] - m[1][0], m[2][3] - m[2][0] }, -(m[3][3] - m[3][0]) };
+    planes[1] = { { m[0][3] + m[0][0], m[1][3] + m[1][0], m[2][3] + m[2][0] }, -(m[3][3] + m[3][0]) };
+    planes[2] = { { m[0][3] - m[0][1], m[1][3] - m[1][1], m[2][3] - m[2][1] }, -(m[3][3] - m[3][1]) };
+    planes[3] = { { m[0][3] + m[0][1], m[1][3] + m[1][1], m[2][3] + m[2][1] }, -(m[3][3] + m[3][1]) };
+    planes[4] = { { m[0][3] - m[0][2], m[1][3] - m[1][2], m[2][3] - m[2][2] }, -(m[3][3] - m[3][2]) };
+    planes[5] = { { m[0][3] + m[0][2], m[1][3] + m[1][2], m[2][3] + m[2][2] }, -(m[3][3] + m[3][2]) };
 }
 } // namespace geometry
 
 namespace culling
 {
-bool cull(const geometry::frustum& frustum, const geometry::aabb& aabb)
+bool cull(const geometry::frustum& frustum, const geometry::aabb& b)
 {
-    glm::vec3 a = aabb.center - aabb.extents;
-    glm::vec3 b = aabb.center + aabb.extents;
-
-    for (const geometry::plane& plane : frustum.planes)
+    for (const geometry::plane& p : frustum.planes)
     {
-        float plane_to_a = glm::dot(plane.n, a) + plane.d;
-        float plane_to_b = glm::dot(plane.n, b) + plane.d;
-
-        if (plane_to_a > 0 && plane_to_b > 0)
+        if (geometry::testAabbPlane(b, p) < 0)
         {
             return true;
         }

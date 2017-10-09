@@ -76,6 +76,8 @@ bool Swapchain::create(uint32_t* width, uint32_t* height, bool vsync)
         }
     }
 
+    swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+
     uint32_t swapchain_image_count = surface_capabilities.minImageCount + 1;
 
     if ((surface_capabilities.maxImageCount > 0) && (swapchain_image_count > surface_capabilities.maxImageCount))
