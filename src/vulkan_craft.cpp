@@ -106,7 +106,8 @@ void run_game(GLFWwindow* window)
 
     float prev_time = (float)glfwGetTime();
 
-    _world_gen.generate_around(0.0, 0.0, 2);
+    int gen_radius = (200 + Chunk::chunk_size) / Chunk::chunk_size;
+    _world_gen.generate_around(0.0, 0.0, gen_radius);
     poll_mouse(window, _mouse_x, _mouse_y);
 
     int p_state = glfwGetKey(window, GLFW_KEY_P);
@@ -119,7 +120,7 @@ void run_game(GLFWwindow* window)
         float delta = current_time - prev_time;
         prev_time = current_time;
 
-        update_input(window, /*delta*/1.0f / 60.0f);
+        update_input(window, delta);
 
         if (glfwGetKey(window, GLFW_KEY_P) != p_state)
         {
@@ -130,7 +131,7 @@ void run_game(GLFWwindow* window)
             }
         }
 
-        _world_gen.generate_around(_camera.position.x, _camera.position.z, 2);
+        _world_gen.generate_around(_camera.position.x, _camera.position.z, gen_radius);
         float height = _world_gen.get_height(_camera.position.x, _camera.position.z) + 1.8f;
 
         if (_camera.position.y < height || glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
