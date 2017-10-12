@@ -107,6 +107,9 @@
     <ClInclude Include="..\src\culling.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\world.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\triangle.vert">
