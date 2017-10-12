@@ -5,6 +5,7 @@
 #include "culling.h"
 #include "depth_buffer.h"
 #include "graphics_pipeline.h"
+#include "mesh_cache.h"
 #include "render_pass.h"
 #include "shader_cache.h"
 #include "texture_cache.h"
@@ -75,22 +76,6 @@ private:
     VkDescriptorSet _descriptor_set = VK_NULL_HANDLE;
 
     TextureArray _textures;
-
-    class RenderMesh
-    {
-    public:
-        RenderMesh(VkDevice device);
-        RenderMesh(RenderMesh&& other);
-        ~RenderMesh();
-
-        VkDevice device = VK_NULL_HANDLE;
-        VkBuffer vertex_buffer = VK_NULL_HANDLE;
-        VkBuffer index_buffer = VK_NULL_HANDLE;
-        VkDeviceMemory memory = VK_NULL_HANDLE;
-        uint32_t index_count = 0;
-
-        geometry::aabb _aabb;
-    };
 
     std::vector<RenderMesh> _meshes;
 

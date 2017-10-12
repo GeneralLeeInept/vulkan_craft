@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "geometry.h"
+#include "mesh_cache.h"
 #include "vulkan.h"
 
 bool Renderer::initialise(GLFWwindow* window)
@@ -207,40 +208,6 @@ bool Renderer::set_window_size(uint32_t width, uint32_t height)
     return true;
 }
 
-Renderer::RenderMesh::RenderMesh(VkDevice device)
-    : device(device)
-{
-}
-
-Renderer::RenderMesh::RenderMesh(RenderMesh&& other)
-{
-    device = other.device;
-    index_buffer = other.index_buffer;
-    vertex_buffer = other.vertex_buffer;
-    index_count = other.index_count;
-    memory = other.memory;
-    _aabb = other._aabb;
-    memset(&other, 0, sizeof(RenderMesh));
-}
-
-Renderer::RenderMesh::~RenderMesh()
-{
-    if (index_buffer)
-    {
-        vkDestroyBuffer(device, index_buffer, nullptr);
-    }
-
-    if (vertex_buffer)
-    {
-        vkDestroyBuffer(device, vertex_buffer, nullptr);
-    }
-
-    if (memory)
-    {
-        vkFreeMemory(device, memory, nullptr);
-    }
-}
-
 bool Renderer::add_mesh(const Mesh& mesh)
 {
     uint32_t vertex_count = (uint32_t)mesh.vertices.size();
@@ -367,7 +334,7 @@ bool Renderer::draw_frame()
     VK_CHECK_RESULT(vkBeginCommandBuffer(command_buffer, &begin_info));
 
     VkClearValue clear_values[2];
-    clear_values[0] = { 0.6f, 0.0f, 0.6f, 1.0f };
+    clear_values[0] = { 0.24f, 0.77f, 0.96f, 1.0f };
     clear_values[1] = { 1.0f, 0 };
     VkRenderPassBeginInfo render_pass_begin_info = {};
     render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

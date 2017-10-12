@@ -3,6 +3,8 @@
 #include <map>
 #include <stdint.h>
 
+namespace world
+{
 struct Voxel
 {
     enum class Type : uint16_t
@@ -46,3 +48,4 @@ struct ChunkMap
     Key key(int32_t x, int32_t z) { return ((((uint64_t)x) << 32) & 0xffffffff00000000) | (((uint32_t)z) & 0xffffffff); }
     std::map<uint64_t, Chunk> chunks;
 };
+}

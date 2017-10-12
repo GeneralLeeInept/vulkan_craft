@@ -57,6 +57,9 @@
     <ClCompile Include="..\src\culling.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\mesh_cache.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.h">
@@ -109,6 +112,9 @@
     </ClInclude>
     <ClInclude Include="..\src\world.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\mesh_cache.h">
+      <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
